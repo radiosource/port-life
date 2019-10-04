@@ -1,0 +1,26 @@
+{
+  "name": "port-life",
+  "version": "1.0.0",
+  "main": "./index.html",
+  "description": "port-life",
+  "author": {
+    "name": "Oleh Zahnitko",
+    "email": "riftersound@gmail.com"
+  },
+  "licenses": [
+    "MIT"
+  ],
+  "dependencies": {
+    "pixi.js": "^5.1.5"
+  },
+  "devDependencies": {
+    "@types/pixi.js": "^4.8.9",
+    "ts-loader": "^6.2.0",
+    "typescript": "^3.6.3",
+    "webpack": "^4.41.0",
+    "webpack-cli": "^3.3.9"
+  },
+  "scripts": {
+    "init": "npm install && webpack"
+  }
+}

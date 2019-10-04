@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "outDir": "./public/js/",
+    "noImplicitAny": false,
+    "module": "es6",
+    "target": "es6",
+    "declaration": true
+  }
+}
