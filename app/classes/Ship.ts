@@ -2,6 +2,9 @@ import {IShip} from '../interfaces/IShip';
 import {IShipTypes, IShipType} from '../interfaces/IShipTypes';
 import {shipTypes, config} from '../config/default';
 
+const TWEEN = require('@tweenjs/tween.js').default;
+TWEEN.Tween
+
 
 export class Ship implements IShip {
 
@@ -13,10 +16,13 @@ export class Ship implements IShip {
     readonly type: string;
     readonly color: number;
 
-    protected _graphic: any;
+    protected _graphics: any;
+    protected _animation: any;
     protected _loaded: boolean;
     protected _x: number;
     protected _y: number;
+    protected _prevX: number;
+    protected _prevY: number;
 
 
     /**@todo переписать на фабрику
@@ -48,15 +54,26 @@ export class Ship implements IShip {
 
     }
 
-    get graphic() {
-        return this._graphic;
+    get animation() {
+        return this._animation;
     }
 
-    set graphic(graphic) {
-        if (!(graphic instanceof PIXI.Graphics)) {
+    set animation(animation) {
+        if (!(animation instanceof TWEEN.Tween)) {
+            throw Error("Argument does'nt instanceof TWEEN.Tween")
+        }
+        this._animation = animation;
+    }
+
+    get graphics() {
+        return this._graphics;
+    }
+
+    set graphics(graphics) {
+        if (!(graphics instanceof PIXI.Graphics)) {
             throw Error("Argument does'nt instanceof PIXI.Graphics")
         }
-        this._graphic = graphic;
+        this._graphics = graphics;
     }
 
     get loaded(): boolean {
@@ -67,12 +84,30 @@ export class Ship implements IShip {
         this._loaded = loaded;
     }
 
+    set x(x) {
+        this._prevX = this._x;
+        this._x = x;
+    }
+
+    set y(y) {
+        this._prevY = this._y;
+        this._y = y;
+    }
+
     get x(): number {
         return this._x;
     }
 
     get y(): number {
         return this._y;
+    }
+
+    get prevX(): number {
+        return this._prevX;
+    }
+
+    get prevY(): number {
+        return this._prevY;
     }
 
 }

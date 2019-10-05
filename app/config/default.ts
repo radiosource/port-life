@@ -13,7 +13,7 @@ export const shipTypes: IShipTypes = {
         color: 0xd6212b,
         START_POINTS: {
             X: WINDOW_WIDTH - SHIP_WIDTH,
-            Y: WINDOW_HEIGHT / 4
+            Y: WINDOW_HEIGHT - WINDOW_HEIGHT / 4
         }
     },
     "green": {
@@ -21,7 +21,7 @@ export const shipTypes: IShipTypes = {
         color: 0x38ba1d,
         START_POINTS: {
             X: WINDOW_WIDTH - SHIP_WIDTH,
-            Y: WINDOW_HEIGHT - WINDOW_HEIGHT / 4
+            Y: WINDOW_HEIGHT / 4
         }
     }
 };
@@ -34,7 +34,7 @@ export const config: IConfig = {
     WINDOW_HEIGHT,
     DOCKS_COUNT: 4,
     CARGO_HANDLING_TIME: SECOND * 5,
-    SHIP_CREATION_INTERVAL: SECOND * 1,
+    SHIP_CREATION_INTERVAL: SECOND * 2,
 };
 
 

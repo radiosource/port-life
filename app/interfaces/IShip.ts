@@ -6,5 +6,5 @@ export interface IShip {
     readonly type: string;
     readonly color: number;
     readonly loaded: boolean;
-    graphic: any;
+    graphics: any;
 }
