@@ -36,7 +36,7 @@ export const config: IConfig = {
     WATER_COLOR: 0x4169e1,
     DOCKS_COUNT: 4,
     CARGO_HANDLING_TIME: SECOND * 1,
-    SHIP_CREATION_INTERVAL: SECOND * 2,
+    SHIP_CREATION_INTERVAL: SECOND * 8,
 };
 
 

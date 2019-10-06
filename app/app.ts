@@ -8,7 +8,7 @@ import {clearInterval} from "timers";
 const TWEEN = require('@tweenjs/tween.js').default;
 Object.assign(window, {TWEEN});
 
-let types = ["green", "red"];
+let types = ["red","red","green"];
 const ships: Ship[] = [];
 let harbor: Harbor;
 
@@ -43,12 +43,12 @@ export function runApp(): void {
     document.body.appendChild(app.view);
 
 
-    createShip();
     //setTimeout(createShip, 1000);
-    //setTimeout(createShip, 2000);
+
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
-    // let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
-    // Object.assign(window, {stop: () => clearInterval(intervalId)});
+    createShip();
+    let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL);
+    Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
 
     app.ticker.add(() => {
@@ -60,13 +60,14 @@ export function runApp(): void {
     harbor = new Harbor();
 
     function createShip() {
+        if(Ship.quantity >5) return;
         let ship = new Ship(getRandomShipType());
         ships.push(ship);
         Object.assign(window, {ships, ship});
     }
 
     function getRandomShipType(): string {
-        return "red"
+        //return "red";
         const shipTypesList = Object.keys(shipTypes);
         const randomNumber = parseInt(String(Math.random() * 100));
         //return types.shift();

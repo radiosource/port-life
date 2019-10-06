@@ -12,7 +12,7 @@ export class Dock {
     busy: boolean = false;
     readonly receivingPoints: { x: number, y: number };
     readonly height: number = config.WINDOW_HEIGHT / 4 - 10;
-    readonly width: number = config.SHIP_WIDTH;
+    readonly width: number = config.SHIP_HEIGHT;
 
     protected _loaded: boolean = false;
     protected color: number = 0xd4af37;

@@ -1,4 +1,5 @@
 import {Harbor} from './Harbor';
+import {Dock} from './Dock';
 import {IShip} from '../interfaces/IShip';
 import {IShipTypes, IShipType} from '../interfaces/IShipTypes';
 import {shipTypes, config} from '../config/default';
@@ -39,8 +40,7 @@ export class Ship implements IShip {
         Object.assign(this, shipTypes[type], {type});
         this.makeGraphics();
         this.animation = new TWEEN.Tween(this);
-
-        this.move({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y}, 2000);
+        this.moveToGate();
     }
 
     protected makeGraphics() {
@@ -53,9 +53,9 @@ export class Ship implements IShip {
         this.graphics = app.stage.addChild(graphics);
     }
 
-    protected move(coordinates, time: number): TWEEN.Tween {
-        return this.animation
-            .to(coordinates, time)
+    protected moveToGate() {
+        this.animation
+            .to({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y}, 5000)
             .easing(TWEEN.Easing.Linear.None)
             .onUpdate(this.onAnimationUpdate)
             .onComplete(function () {
@@ -68,27 +68,42 @@ export class Ship implements IShip {
     public handleMessage(eventType: string, target: any) {
         switch (eventType) {
             case "harbor::moveToDock":
-                this.animation = this.makeAnimation({y: Harbor.gateY, x: this.x}, 1000);
-                this.animation.chain(
-                    this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY}, 500)
-                        .chain(this
-                            .makeAnimation(target.receivingPoints, 2000)
-                            .onComplete(function () {
-                                target.handleMessage("ship::handleCargo", this);
-                                this.animation = new TWEEN.Tween({})
-                                    .to({}, config.CARGO_HANDLING_TIME)
-                                    .onComplete(function (object) {
-                                        console.log("onCompleteonCompleteonComplete");
-                                        this.loaded = !this.loaded;
-                                        this.makeGraphics();
-                                    }.bind(this))
-                                    .start()
-                            }.bind(this))
-                        )
-                );
-                this.animation.start();
+                this.moveToDock(target);
                 break;
         }
+    }
+
+    protected moveToDock(target:Dock){
+        this.animation = this.makeAnimation({y: Harbor.gateY, x: this.x}, 1000);
+        this.animation.chain(
+            this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY}, 500)
+                .chain(this
+                    .makeAnimation(target.receivingPoints, 2000)
+                    .onComplete(function () {
+                        target.handleMessage("ship::handleCargo", this);
+                        this.animation = new TWEEN.Tween({})
+                            .to({}, config.CARGO_HANDLING_TIME)
+                            .onComplete(function (object) {
+                                this.loaded = !this.loaded;
+                                this.makeGraphics();
+                                this.moveToStart();
+                            }.bind(this))
+                            .start()
+                    }.bind(this))
+            )
+        );
+        this.animation.start();
+    }
+
+    protected moveToStart(){
+        this.animation = this.makeAnimation({y: Harbor.gateY, x: Harbor.gateX- Harbor.gateWidth * 2}, 2000);
+        this.animation.chain(this
+            .makeAnimation({y:config.WINDOW_HEIGHT/2,x:config.WINDOW_WIDTH}, 5000)
+            .onComplete(function () {
+                this.graphics.destroy();
+            }.bind(this))
+        );
+        this.animation.start();
     }
 
     protected makeAnimation(targetPosition: { x: number, y: number }, time: number): TWEEN.Tween {

@@ -1,5 +1,6 @@
 /// <reference types="pixi.js" />
 /// <reference types="tween.js" />
+import { Dock } from './Dock';
 import { IShip } from '../interfaces/IShip';
 export declare class Ship implements IShip {
     static quantity: number;
@@ -20,8 +21,10 @@ export declare class Ship implements IShip {
      */
     constructor(type: any);
     protected makeGraphics(): void;
-    protected move(coordinates: any, time: number): TWEEN.Tween;
+    protected moveToGate(): void;
     handleMessage(eventType: string, target: any): void;
+    protected moveToDock(target: Dock): void;
+    protected moveToStart(): void;
     protected makeAnimation(targetPosition: {
         x: number;
         y: number;
