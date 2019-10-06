@@ -1,5 +1,7 @@
 export interface IConfig {
     readonly SECOND: number;
+    readonly SAFE_DISTANCE: number;
+    readonly WATER_COLOR: number,
     readonly SHIP_WIDTH: number,
     readonly SHIP_HEIGHT: number,
     readonly DOCKS_COUNT: number;

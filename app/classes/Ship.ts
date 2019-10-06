@@ -1,9 +1,10 @@
+import {Harbor} from './Harbor';
 import {IShip} from '../interfaces/IShip';
 import {IShipTypes, IShipType} from '../interfaces/IShipTypes';
 import {shipTypes, config} from '../config/default';
+import {app, shipsTooClose, findSuitableDock, notify} from '../app';
 
 const TWEEN = require('@tweenjs/tween.js').default;
-TWEEN.Tween
 
 
 export class Ship implements IShip {
@@ -16,14 +17,14 @@ export class Ship implements IShip {
     readonly type: string;
     readonly color: number;
 
-    protected _graphics: any;
-    protected _animation: any;
+    protected graphics: PIXI.Graphics;
+    protected animation: TWEEN.Tween;
     protected _loaded: boolean;
     protected _x: number;
     protected _y: number;
     protected _prevX: number;
     protected _prevY: number;
-
+    protected state: string;
 
     /**@todo переписать на фабрику
      */
@@ -36,44 +37,70 @@ export class Ship implements IShip {
         this._x = shipTypes[type].START_POINTS.X;
         this._y = shipTypes[type].START_POINTS.Y;
         Object.assign(this, shipTypes[type], {type});
+        this.makeGraphics();
+        this.animation = new TWEEN.Tween(this);
+
+        this.move({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y}, 2000);
     }
 
-    protected makeLoad(): void {
-        //notify
+    protected makeGraphics() {
+        let graphics = new PIXI.Graphics();
+        graphics.beginFill(this.loaded ? this.color : config.WATER_COLOR, 1);
+        graphics.lineStyle(5, this.color, 1);
+        graphics.drawRect(this.x, this.y, this.width, this.height);
+        graphics.endFill();
+        this.graphics && this.graphics.destroy();
+        this.graphics = app.stage.addChild(graphics);
     }
 
-    protected makeUnload() {
-        //notify
+    protected move(coordinates, time: number): TWEEN.Tween {
+        return this.animation
+            .to(coordinates, time)
+            .easing(TWEEN.Easing.Linear.None)
+            .onUpdate(this.onAnimationUpdate)
+            .onComplete(function () {
+                notify("ship::arrivedAtTheGate", this);
+            }.bind(this))
+            .start()
+
     }
 
-    protected move() {
-
-    }
-
-    protected wait() {
-
-    }
-
-    get animation() {
-        return this._animation;
-    }
-
-    set animation(animation) {
-        if (!(animation instanceof TWEEN.Tween)) {
-            throw Error("Argument does'nt instanceof TWEEN.Tween")
+    public handleMessage(eventType: string, target: any) {
+        switch (eventType) {
+            case "harbor::moveToDock":
+                this.animation = this.makeAnimation({y: Harbor.gateY, x: this.x}, 1000);
+                this.animation.chain(
+                    this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY}, 500)
+                        .chain(this
+                            .makeAnimation(target.receivingPoints, 2000)
+                            .onComplete(function () {
+                                target.handleMessage("ship::handleCargo", this);
+                                this.animation = new TWEEN.Tween({})
+                                    .to({}, config.CARGO_HANDLING_TIME)
+                                    .onComplete(function (object) {
+                                        console.log("onCompleteonCompleteonComplete");
+                                        this.loaded = !this.loaded;
+                                        this.makeGraphics();
+                                    }.bind(this))
+                                    .start()
+                            }.bind(this))
+                        )
+                );
+                this.animation.start();
+                break;
         }
-        this._animation = animation;
     }
 
-    get graphics() {
-        return this._graphics;
+    protected makeAnimation(targetPosition: { x: number, y: number }, time: number): TWEEN.Tween {
+        return new TWEEN.Tween(this)
+            .to(targetPosition, time)
+            .easing(TWEEN.Easing.Linear.None)
+            .onUpdate(this.onAnimationUpdate)
     }
 
-    set graphics(graphics) {
-        if (!(graphics instanceof PIXI.Graphics)) {
-            throw Error("Argument does'nt instanceof PIXI.Graphics")
-        }
-        this._graphics = graphics;
+    protected onAnimationUpdate(object: Ship) {
+        object.graphics.x -= object.prevX - object.x;
+        object.graphics.y -= object.prevY - object.y;
     }
 
     get loaded(): boolean {

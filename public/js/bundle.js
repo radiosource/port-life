@@ -1280,15 +1280,108 @@ const config = {
     SHIP_HEIGHT,
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
+    SAFE_DISTANCE: 20,
+    WATER_COLOR: 0x4169e1,
     DOCKS_COUNT: 4,
-    CARGO_HANDLING_TIME: SECOND * 5,
+    CARGO_HANDLING_TIME: SECOND * 1,
     SHIP_CREATION_INTERVAL: SECOND * 2,
 };
 
-// CONCATENATED MODULE: ./app/classes/Ship.ts
+// CONCATENATED MODULE: ./app/classes/Dock.ts
+
 
 const TWEEN = __webpack_require__(0).default;
-TWEEN.Tween;
+class Dock_Dock {
+    constructor(yStart) {
+        this.busy = false;
+        this.height = config.WINDOW_HEIGHT / 4 - 10;
+        this.width = config.SHIP_WIDTH;
+        this._loaded = false;
+        this.color = 0xd4af37;
+        this.id = Dock_Dock.quantity;
+        this.yStart = yStart;
+        this.receivingPoints = { y: yStart + this.width / 2, x: this.width + 10 };
+        this.makeGraphics();
+        this.animation = new TWEEN.Tween(this);
+    }
+    get loaded() {
+        return this._loaded;
+    }
+    set loaded(loaded) {
+        this._loaded = loaded;
+        this.busy = false;
+    }
+    makeGraphics() {
+        let graphics = new PIXI.Graphics();
+        graphics.beginFill(this.loaded ? this.color : config.WATER_COLOR, 1);
+        graphics.lineStyle(10, this.color, 1);
+        graphics.drawRect(0, this.yStart, this.width, this.height);
+        graphics.endFill();
+        this.graphics && this.graphics.destroy();
+        this.graphics = app.stage.addChild(graphics);
+    }
+    handleMessage(eventType, target) {
+        console.log("handleMessage", eventType);
+        switch (eventType) {
+            case "ship::handleCargo":
+                this.animation = new TWEEN.Tween({})
+                    .to({}, config.CARGO_HANDLING_TIME)
+                    .onComplete(function (object) {
+                    this.loaded = !this.loaded;
+                    this.makeGraphics();
+                }.bind(this))
+                    .start();
+                break;
+        }
+    }
+}
+Dock_Dock.quantity = 0;
+
+// CONCATENATED MODULE: ./app/classes/Harbor.ts
+
+
+
+const Harbor_TWEEN = __webpack_require__(0).default;
+class Harbor_Harbor {
+    constructor() {
+        this.docs = [];
+        this.color = 0xd4af37;
+        if (Harbor_Harbor.quantity)
+            throw Error("Only one harbor!");
+        Harbor_Harbor.quantity++;
+        const graphics = new PIXI.Graphics();
+        graphics.beginFill(this.color, 1);
+        graphics.drawRect(Harbor_Harbor.gateX - Harbor_Harbor.gateWidth, 0, Harbor_Harbor.gateWidth, Harbor_Harbor.gateY - config.SHIP_HEIGHT * 4);
+        graphics.drawRect(Harbor_Harbor.gateX - Harbor_Harbor.gateWidth, Harbor_Harbor.gateY + config.SHIP_HEIGHT * 4, Harbor_Harbor.gateWidth, config.WINDOW_HEIGHT);
+        graphics.endFill();
+        this.graphics = app.stage.addChild(graphics);
+        for (let x = 0; x < config.DOCKS_COUNT; x++) {
+            this.docs.push(new Dock_Dock(config.WINDOW_HEIGHT / 4 * x));
+        }
+    }
+    handleMessage(eventType, target) {
+        console.log("handleMessage", eventType);
+        switch (eventType) {
+            case ("ship::arrivedAtTheGate"):
+                const suitableDocks = this.docs.filter((dock) => dock.loaded !== target.loaded && !dock.busy);
+                if (suitableDocks.length) {
+                    suitableDocks[0].busy = true;
+                    target.handleMessage("harbor::moveToDock", suitableDocks[0]);
+                }
+                break;
+        }
+    }
+}
+Harbor_Harbor.quantity = 0;
+Harbor_Harbor.gateX = config.WINDOW_WIDTH / 3;
+Harbor_Harbor.gateY = config.WINDOW_HEIGHT / 2;
+Harbor_Harbor.gateWidth = config.SHIP_WIDTH / 3;
+
+// CONCATENATED MODULE: ./app/classes/Ship.ts
+
+
+
+const Ship_TWEEN = __webpack_require__(0).default;
 class Ship_Ship {
     /**@todo переписать на фабрику
      */
@@ -1303,34 +1396,60 @@ class Ship_Ship {
         this._x = shipTypes[type].START_POINTS.X;
         this._y = shipTypes[type].START_POINTS.Y;
         Object.assign(this, shipTypes[type], { type });
+        this.makeGraphics();
+        this.animation = new Ship_TWEEN.Tween(this);
+        this.move({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, 2000);
     }
-    makeLoad() {
-        //notify
+    makeGraphics() {
+        let graphics = new PIXI.Graphics();
+        graphics.beginFill(this.loaded ? this.color : config.WATER_COLOR, 1);
+        graphics.lineStyle(5, this.color, 1);
+        graphics.drawRect(this.x, this.y, this.width, this.height);
+        graphics.endFill();
+        this.graphics && this.graphics.destroy();
+        this.graphics = app.stage.addChild(graphics);
     }
-    makeUnload() {
-        //notify
+    move(coordinates, time) {
+        return this.animation
+            .to(coordinates, time)
+            .easing(Ship_TWEEN.Easing.Linear.None)
+            .onUpdate(this.onAnimationUpdate)
+            .onComplete(function () {
+            notify("ship::arrivedAtTheGate", this);
+        }.bind(this))
+            .start();
     }
-    move() {
-    }
-    wait() {
-    }
-    get animation() {
-        return this._animation;
-    }
-    set animation(animation) {
-        if (!(animation instanceof TWEEN.Tween)) {
-            throw Error("Argument does'nt instanceof TWEEN.Tween");
+    handleMessage(eventType, target) {
+        switch (eventType) {
+            case "harbor::moveToDock":
+                this.animation = this.makeAnimation({ y: Harbor_Harbor.gateY, x: this.x }, 1000);
+                this.animation.chain(this.makeAnimation({ x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2, y: Harbor_Harbor.gateY }, 500)
+                    .chain(this
+                    .makeAnimation(target.receivingPoints, 2000)
+                    .onComplete(function () {
+                    target.handleMessage("ship::handleCargo", this);
+                    this.animation = new Ship_TWEEN.Tween({})
+                        .to({}, config.CARGO_HANDLING_TIME)
+                        .onComplete(function (object) {
+                        console.log("onCompleteonCompleteonComplete");
+                        this.loaded = !this.loaded;
+                        this.makeGraphics();
+                    }.bind(this))
+                        .start();
+                }.bind(this))));
+                this.animation.start();
+                break;
         }
-        this._animation = animation;
     }
-    get graphics() {
-        return this._graphics;
+    makeAnimation(targetPosition, time) {
+        return new Ship_TWEEN.Tween(this)
+            .to(targetPosition, time)
+            .easing(Ship_TWEEN.Easing.Linear.None)
+            .onUpdate(this.onAnimationUpdate);
     }
-    set graphics(graphics) {
-        if (!(graphics instanceof PIXI.Graphics)) {
-            throw Error("Argument does'nt instanceof PIXI.Graphics");
-        }
-        this._graphics = graphics;
+    onAnimationUpdate(object) {
+        object.graphics.x -= object.prevX - object.x;
+        object.graphics.y -= object.prevY - object.y;
     }
     get loaded() {
         return this._loaded;
@@ -1365,66 +1484,64 @@ Ship_Ship.quantity = 0;
 
 
 
+
 const app_TWEEN = __webpack_require__(0).default;
 Object.assign(window, { TWEEN: app_TWEEN });
 let types = ["green", "red"];
+const ships = [];
+let harbor;
+const app = new PIXI.Application({
+    width: config.WINDOW_WIDTH,
+    height: config.WINDOW_HEIGHT,
+    //backgroundColor: 0xFFFFFF
+    backgroundColor: config.WATER_COLOR
+});
+function findSuitableDock(shipHaveCargo) {
+    return harbor.docs.filter((dock) => dock.loaded !== shipHaveCargo)[0];
+}
+function shipsTooClose(currentShip) {
+    let filteredShips = ships.filter(ship => ship.id !== currentShip.id && ship.type === currentShip.type);
+    return Boolean(filteredShips
+        .filter(ship => Math.abs(currentShip.x - ship.x - ship.width) < config.SAFE_DISTANCE)
+        .length);
+}
+function notify(eventType, target) {
+    [harbor, ...ships].forEach(listener => listener.handleMessage(eventType, target));
+}
 function runApp() {
-    const ships = [];
-    const app = new PIXI.Application({
-        width: config.WINDOW_WIDTH,
-        height: config.WINDOW_HEIGHT,
-        //backgroundColor: 0xFFFFFF
-        backgroundColor: 0x4169e1
-    });
     document.body.appendChild(app.view);
     createShip();
-    createShip();
+    //setTimeout(createShip, 1000);
     //setTimeout(createShip, 2000);
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
-    // let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL);
+    // let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
     // Object.assign(window, {stop: () => clearInterval(intervalId)});
+    // setTimeout(window.stop, 10000);
     app.ticker.add(() => {
-        boxesIntersect(ships[0].graphics, ships[1].graphics);
         //createShip()
         //setInterval(createShip, 1000)
     });
+    harbor = new Harbor_Harbor();
     function createShip() {
         let ship = new Ship_Ship(getRandomShipType());
         ships.push(ship);
         Object.assign(window, { ships, ship });
-        renderShip(ship);
     }
     function getRandomShipType() {
+        return "red";
         const shipTypesList = Object.keys(shipTypes);
         const randomNumber = parseInt(String(Math.random() * 100));
-        return types.shift();
+        //return types.shift();
         return shipTypesList[randomNumber % shipTypesList.length];
-    }
-    function renderShip(ship) {
-        const graphics = new PIXI.Graphics();
-        graphics.beginFill(ship.color, 1);
-        graphics.lineStyle(1, 0x0f0f0f, 1);
-        graphics.drawRect(ship.x, ship.y, ship.width, ship.height);
-        graphics.endFill();
-        ship.graphics = app.stage.addChild(graphics);
-        ship.animation = new app_TWEEN.Tween(ship)
-            .to({ x: config.WINDOW_WIDTH / 2, y: config.WINDOW_HEIGHT / 2 || ship.y }, 5000)
-            //.easing(TWEEN.Easing.Quadratic.Out)
-            .onUpdate(function (object) {
-            object.graphics.x -= object.prevX - object.x;
-            object.graphics.y -= object.prevY - object.y;
-        })
-            .start();
     }
     function animate() {
         requestAnimationFrame(animate);
         app_TWEEN.update();
     }
     animate();
-    function boxesIntersect(a, b) {
+    function isFaced(a, b) {
         var ab = a.getBounds();
         var bb = b.getBounds();
-        console.log(ab.x + ab.width > bb.x && ab.x < bb.x + bb.width && ab.y + ab.height > bb.y && ab.y < bb.y + bb.height);
         return ab.x + ab.width > bb.x && ab.x < bb.x + bb.width && ab.y + ab.height > bb.y && ab.y < bb.y + bb.height;
     }
 }

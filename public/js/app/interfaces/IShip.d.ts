@@ -5,5 +5,9 @@ export interface IShip {
     readonly type: string;
     readonly color: number;
     readonly loaded: boolean;
-    graphics: any;
+    x: number;
+    y: number;
+    prevX: number;
+    prevY: number;
+    handleMessage(eventType: string, target: any): void;
 }
