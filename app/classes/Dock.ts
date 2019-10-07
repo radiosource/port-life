@@ -9,7 +9,6 @@ export class Dock {
     static quantity = 0;
     readonly id: number;
 
-    busy: boolean = false;
     readonly receivingPoints: { x: number, y: number };
     readonly height: number = config.WINDOW_HEIGHT / 4 - 10;
     readonly width: number = config.SHIP_HEIGHT;
@@ -37,7 +36,6 @@ export class Dock {
 
     set loaded(loaded) {
         this._loaded = loaded;
-        this.busy = false;
     }
 
     protected makeGraphics() {

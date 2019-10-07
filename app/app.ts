@@ -36,7 +36,6 @@ export function subscribe(eventName: string, subscriber: any): void {
 export function unsubscribe(eventName: string, subscriber: any): void {
     if (!eventsListeners[eventName]) return;
     eventsListeners[eventName].delete(subscriber);
-    eventName === "dock::moveToDock" && console.log("unsubscribe::" + eventsListeners[eventName].size);
 }
 
 export function message(eventName: string, initiator: any, target?: any) {
@@ -44,15 +43,11 @@ export function message(eventName: string, initiator: any, target?: any) {
         if (!(target.handleMessage instanceof Function)) throw Error("message::Invalid target!");
         if (eventsListeners[eventName].has(target)) {
             target.handleMessage(eventName, initiator);
-            return true;
         }
-        return false;
     } else {
         for (let listener of eventsListeners[eventName]) {
             listener.handleMessage(eventName, initiator);
-            return true;
         }
-        return false;
     }
 }
 
@@ -83,8 +78,8 @@ export function runApp(): void {
 
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
     createShip("red");
-    setTimeout(createShip.bind(null,"green"), 5000);
-    //let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL);
+    //setTimeout(createShip.bind(null, "green"), 5000);
+    let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
     // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
 

@@ -1293,10 +1293,9 @@ const config = {
 const TWEEN = __webpack_require__(0).default;
 class Dock_Dock {
     constructor(yStart) {
-        this.busy = false;
         this.height = config.WINDOW_HEIGHT / 4 - 10;
         this.width = config.SHIP_HEIGHT;
-        this._loaded = true;
+        this._loaded = false;
         this.color = 0xd4af37;
         Dock_Dock.quantity++;
         this.id = Dock_Dock.quantity;
@@ -1311,7 +1310,6 @@ class Dock_Dock {
     }
     set loaded(loaded) {
         this._loaded = loaded;
-        this.busy = false;
     }
     makeGraphics() {
         let graphics = new PIXI.Graphics();
@@ -1324,9 +1322,6 @@ class Dock_Dock {
     }
     handleMessage(eventType, target) {
         switch (eventType) {
-            // case "ship::rogerThat":
-            //     unsubscribe("ship::arrivedAtTheGate", this);
-            //     break;
             case "ship::arrivedAtTheGate":
                 if (this.loaded !== target.loaded) {
                     unsubscribe("ship::arrivedAtTheGate", this);
@@ -1435,7 +1430,6 @@ class Ship_Ship {
         switch (eventType) {
             case "dock::moveToDock":
                 unsubscribe("dock::moveToDock", this);
-                //message("ship::rogerThat", this, target);
                 this.moveToDock(target);
                 break;
         }
@@ -1536,30 +1530,22 @@ function subscribe(eventName, subscriber) {
     eventsListeners[eventName].add(subscriber);
 }
 function unsubscribe(eventName, subscriber) {
-    //console.log("unsubscribe::"+eventName);
     if (!eventsListeners[eventName])
         return;
     eventsListeners[eventName].delete(subscriber);
-    eventName === "dock::moveToDock" && console.log("unsubscribe::" + eventsListeners[eventName].size);
 }
 function message(eventName, initiator, target) {
     if (target) {
         if (!(target.handleMessage instanceof Function))
             throw Error("message::Invalid target!");
-        console.log(`message to target::${eventName}, initiator.id::${initiator.id}, target.id::${target.id} ` + eventsListeners[eventName].has(target));
         if (eventsListeners[eventName].has(target)) {
             target.handleMessage(eventName, initiator);
-            return true;
         }
-        return false;
     }
     else {
-        //console.log(`message to all::${eventName}, initiator.id::${initiator.id}`);
         for (let listener of eventsListeners[eventName]) {
             listener.handleMessage(eventName, initiator);
-            return true;
         }
-        return false;
     }
 }
 function findSuitableDock(shipHaveCargo) {
@@ -1579,9 +1565,9 @@ function runApp() {
     document.body.appendChild(app.view);
     //setTimeout(createShip, 1000);
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
-    createShip("green");
-    //setTimeout(createShip.bind(null,"green"), 5000);
-    //let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL);
+    createShip("red");
+    //setTimeout(createShip.bind(null, "green"), 5000);
+    let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
     // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
     app.ticker.add(() => {
