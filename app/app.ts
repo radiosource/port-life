@@ -38,26 +38,23 @@ export function unsubscribe(eventName: string, subscriber: any): void {
     eventsListeners[eventName].delete(subscriber);
 }
 
-export function message(eventName: string, initiator: any, target?: any) {
-    console.log("message::" + eventName);
+export function message(eventName: string, initiator: any, target?: any): boolean {
+    let result = false;
     if (target) {
         if (!(target.handleMessage instanceof Function)) throw Error("message::Invalid target!");
         if (eventsListeners[eventName].has(target)) {
             target.handleMessage(eventName, initiator);
-            return true;
+            result = true;
         }
     } else {
         for (let listener of eventsListeners[eventName]) {
+            result = true;
             listener.handleMessage(eventName, initiator);
         }
-        return Boolean(eventsListeners[eventName].size);
     }
-    return false;
+    return result;
 }
 
-export function findSuitableDock(shipHaveCargo: boolean): any {
-    return harbor.docs.filter((dock: Dock) => dock.loaded !== shipHaveCargo)[0];
-}
 
 export function shipsTooClose(currentShip: Ship): boolean {
     let filteredShips = ships.filter(ship => ship.id !== currentShip.id && ship.type === currentShip.type);
@@ -66,10 +63,6 @@ export function shipsTooClose(currentShip: Ship): boolean {
             .filter(ship => Math.abs(currentShip.x - ship.x - ship.width) < config.SAFE_DISTANCE)
             .length
     );
-}
-
-export function notify(eventType, target): void {
-    [harbor, ...ships].forEach(listener => listener.handleMessage(eventType, target))
 }
 
 

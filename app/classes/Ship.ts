@@ -3,7 +3,7 @@ import {Dock} from './Dock';
 import {IShip} from '../interfaces/IShip';
 import {IShipTypes, IShipType} from '../interfaces/IShipTypes';
 import {shipTypes, config} from '../config/default';
-import {app, shipsTooClose, findSuitableDock, notify, subscribe, unsubscribe, message, getTravelTime} from '../app';
+import {app, shipsTooClose, subscribe, unsubscribe, message, getTravelTime} from '../app';
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
