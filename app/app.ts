@@ -74,10 +74,11 @@ export function runApp(): void {
     //setTimeout(createShip, 1000);
 
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
-    createShip("red");
-    // setTimeout(createShip.bind(null, "red"), 5000);
+    createShip("green");
+     setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
+     //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     // setTimeout(createShip.bind(null, "green"), 10000);
-    let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
+    //let intervalId = setInterval(createShip.bind(null,"green"), config.SHIP_CREATION_INTERVAL / 2);
     // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
 

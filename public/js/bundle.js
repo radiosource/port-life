@@ -1407,7 +1407,7 @@ class Ship_Ship {
         this._y = shipTypes[type].START_POINTS.Y;
         Object.assign(this, shipTypes[type], { type });
         this.makeGraphics();
-        this.animation = new Ship_TWEEN.Tween(this);
+        //this.animation = new TWEEN.Tween(this);
         this.moveToGate();
     }
     makeGraphics() {
@@ -1420,17 +1420,29 @@ class Ship_Ship {
         this.graphics = app.stage.addChild(graphics);
     }
     moveToGate() {
-        this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y })
+        //shipsTooClose
+        this.animation = this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, function (object) {
+            this.onAnimationUpdate(object);
+            if (shipsTooClose(this)) {
+                this.animation.pause();
+                this.subscribe("ship::queueHasMoved");
+            }
+        }.bind(this))
             .onComplete(function () {
-            subscribe("dock::moveToDock", this);
+            this.unsubscribe("ship::queueHasMoved");
+            this.subscribe("dock::moveToDock");
             message(`ship::arrivedAtTheGate`, this);
         }.bind(this))
             .start();
     }
     handleMessage(eventType, target) {
         switch (eventType) {
+            case "ship::queueHasMoved":
+                this.unsubscribe("ship::queueHasMoved");
+                this.animation.resume();
+                break;
             case "dock::moveToDock":
-                unsubscribe("dock::moveToDock", this);
+                this.unsubscribe("dock::moveToDock");
                 this.moveToDock(target);
                 break;
         }
@@ -1462,16 +1474,22 @@ class Ship_Ship {
         }.bind(this)));
         this.animation.start();
     }
-    makeAnimation(targetPosition) {
+    makeAnimation(targetPosition, customOnUpdate) {
         const time = getTravelTime(this, targetPosition);
         return new Ship_TWEEN.Tween(this)
             .to(targetPosition, time)
             .easing(Ship_TWEEN.Easing.Linear.None)
-            .onUpdate(this.onAnimationUpdate);
+            .onUpdate(customOnUpdate || this.onAnimationUpdate);
     }
     onAnimationUpdate(object) {
         object.graphics.x -= object.prevX - object.x;
         object.graphics.y -= object.prevY - object.y;
+    }
+    subscribe(event) {
+        subscribe(event, this);
+    }
+    unsubscribe(event) {
+        unsubscribe(event, this);
     }
     get loaded() {
         return this._loaded;
@@ -1536,25 +1554,22 @@ function unsubscribe(eventName, subscriber) {
     eventsListeners[eventName].delete(subscriber);
 }
 function message(eventName, initiator, target) {
-    console.log("message::" + eventName);
+    let result = false;
     if (target) {
         if (!(target.handleMessage instanceof Function))
             throw Error("message::Invalid target!");
         if (eventsListeners[eventName].has(target)) {
             target.handleMessage(eventName, initiator);
-            return true;
+            result = true;
         }
     }
     else {
         for (let listener of eventsListeners[eventName]) {
+            result = true;
             listener.handleMessage(eventName, initiator);
         }
-        return Boolean(eventsListeners[eventName].size);
     }
-    return false;
-}
-function findSuitableDock(shipHaveCargo) {
-    return harbor.docs.filter((dock) => dock.loaded !== shipHaveCargo)[0];
+    return result;
 }
 function shipsTooClose(currentShip) {
     let filteredShips = ships.filter(ship => ship.id !== currentShip.id && ship.type === currentShip.type);
@@ -1562,18 +1577,16 @@ function shipsTooClose(currentShip) {
         .filter(ship => Math.abs(currentShip.x - ship.x - ship.width) < config.SAFE_DISTANCE)
         .length);
 }
-function notify(eventType, target) {
-    [harbor, ...ships].forEach(listener => listener.handleMessage(eventType, target));
-}
 function runApp() {
     Object.assign(window, { eventsListeners });
     document.body.appendChild(app.view);
     //setTimeout(createShip, 1000);
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
-    createShip("red");
-    // setTimeout(createShip.bind(null, "red"), 5000);
+    createShip("green");
+    setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
+    //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     // setTimeout(createShip.bind(null, "green"), 10000);
-    let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
+    //let intervalId = setInterval(createShip.bind(null,"green"), config.SHIP_CREATION_INTERVAL / 2);
     // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
     app.ticker.add(() => {

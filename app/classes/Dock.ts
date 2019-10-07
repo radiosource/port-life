@@ -70,6 +70,7 @@ export class Dock {
                         this.makeGraphics();
                         unsubscribe("ship::handleCargo", this);
                         subscribe(`ship::arrivedAtTheGate`, this);
+                        //message(`dock::cargoHandlingFinished`, this);
                     }.bind(this))
                     .start()
                 ;

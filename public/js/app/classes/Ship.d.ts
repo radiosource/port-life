@@ -10,7 +10,7 @@ export declare class Ship implements IShip {
     readonly type: string;
     readonly color: number;
     protected graphics: PIXI.Graphics;
-    protected animation: TWEEN.Tween;
+    protected animation: any;
     protected _loaded: boolean;
     protected _x: number;
     protected _y: number;
@@ -28,8 +28,10 @@ export declare class Ship implements IShip {
     protected makeAnimation(targetPosition: {
         x: number;
         y: number;
-    }): TWEEN.Tween;
+    }, customOnUpdate?: Function): TWEEN.Tween;
     protected onAnimationUpdate(object: Ship): void;
+    protected subscribe(event: string): void;
+    protected unsubscribe(event: string): void;
     loaded: boolean;
     x: number;
     y: number;

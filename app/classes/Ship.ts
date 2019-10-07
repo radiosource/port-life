@@ -19,7 +19,7 @@ export class Ship implements IShip {
     readonly color: number;
 
     protected graphics: PIXI.Graphics;
-    protected animation: TWEEN.Tween;
+    protected animation;
     protected _loaded: boolean;
     protected _x: number;
     protected _y: number;
@@ -39,7 +39,7 @@ export class Ship implements IShip {
         this._y = shipTypes[type].START_POINTS.Y;
         Object.assign(this, shipTypes[type], {type});
         this.makeGraphics();
-        this.animation = new TWEEN.Tween(this);
+        //this.animation = new TWEEN.Tween(this);
         this.moveToGate();
     }
 
@@ -54,9 +54,18 @@ export class Ship implements IShip {
     }
 
     protected moveToGate() {
-        this.makeAnimation({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y})
+        //shipsTooClose
+        this.animation = this.makeAnimation({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y},
+            function (object) {
+                this.onAnimationUpdate(object);
+                if (shipsTooClose(this)) {
+                    this.animation.pause();
+                    this.subscribe("ship::queueHasMoved");
+                }
+            }.bind(this))
             .onComplete(function () {
-                subscribe("dock::moveToDock", this);
+                this.unsubscribe("ship::queueHasMoved");
+                this.subscribe("dock::moveToDock");
                 message(`ship::arrivedAtTheGate`, this);
             }.bind(this))
             .start()
@@ -65,8 +74,12 @@ export class Ship implements IShip {
 
     public handleMessage(eventType: string, target: any) {
         switch (eventType) {
+            case "ship::queueHasMoved":
+                this.unsubscribe("ship::queueHasMoved");
+                this.animation.resume();
+                break;
             case "dock::moveToDock":
-                unsubscribe("dock::moveToDock", this);
+                this.unsubscribe("dock::moveToDock");
                 this.moveToDock(target);
                 break;
         }
@@ -105,17 +118,25 @@ export class Ship implements IShip {
         this.animation.start();
     }
 
-    protected makeAnimation(targetPosition: { x: number, y: number }): TWEEN.Tween {
+    protected makeAnimation(targetPosition: { x: number, y: number }, customOnUpdate?: Function): TWEEN.Tween {
         const time = getTravelTime(this, targetPosition);
         return new TWEEN.Tween(this)
             .to(targetPosition, time)
             .easing(TWEEN.Easing.Linear.None)
-            .onUpdate(this.onAnimationUpdate)
+            .onUpdate(customOnUpdate || this.onAnimationUpdate)
     }
 
     protected onAnimationUpdate(object: Ship) {
         object.graphics.x -= object.prevX - object.x;
         object.graphics.y -= object.prevY - object.y;
+    }
+
+    protected subscribe(event: string): void {
+        subscribe(event, this);
+    }
+
+    protected unsubscribe(event: string): void {
+        unsubscribe(event, this);
     }
 
     get loaded(): boolean {
