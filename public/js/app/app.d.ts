@@ -8,6 +8,13 @@ export declare function getTravelTime(traveler: {
     x: number;
     y: number;
 }): number;
+export declare function getDistance(object1: {
+    x: number;
+    y: number;
+}, object2: {
+    x: number;
+    y: number;
+}): number;
 export declare function subscribe(eventName: string, subscriber: any): void;
 export declare function unsubscribe(eventName: string, subscriber: any): void;
 export declare function message(eventName: string, initiator: any, target?: any): boolean;

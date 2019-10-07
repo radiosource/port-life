@@ -91,7 +91,7 @@ export class Ship implements IShip {
             this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY})
                 .chain(this
                     .makeAnimation(target.receivingPoints)
-                    .onComplete(function () {
+                    .onComplete(function () {;
                         message("ship::handleCargo", this, target);
                         this.animation = new TWEEN.Tween({})
                             .to({}, config.CARGO_HANDLING_TIME)

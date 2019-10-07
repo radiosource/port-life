@@ -63,16 +63,16 @@ export class Dock {
 
 
             case "ship::handleCargo" :
+                unsubscribe("ship::handleCargo", this);
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
                     .onComplete(function (object) {
                         this.loaded = !this.loaded;
                         this.makeGraphics();
-                        unsubscribe("ship::handleCargo", this);
-                        subscribe(`ship::arrivedAtTheGate`, this);
-                        //message(`dock::cargoHandlingFinished`, this);
                         if(message(`dock::moveToDock`, this)){
-                            unsubscribe(`ship::arrivedAtTheGate`, this);
+                            subscribe(`ship::handleCargo`, this);
+                        }else{
+                            subscribe(`ship::arrivedAtTheGate`, this);
                         }
                     }.bind(this))
                     .start()

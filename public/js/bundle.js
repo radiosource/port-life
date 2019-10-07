@@ -285,6 +285,7 @@ TWEEN.Tween.prototype = {
 		this._startTime += this._delayTime;
 
 		for (var property in this._valuesEnd) {
+
 			// Check if an Array was provided as property value
 			if (this._valuesEnd[property] instanceof Array) {
 
@@ -1331,16 +1332,17 @@ class Dock_Dock {
                 }
                 break;
             case "ship::handleCargo":
+                unsubscribe("ship::handleCargo", this);
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
                     .onComplete(function (object) {
                     this.loaded = !this.loaded;
                     this.makeGraphics();
-                    unsubscribe("ship::handleCargo", this);
-                    subscribe(`ship::arrivedAtTheGate`, this);
-                    //message(`dock::cargoHandlingFinished`, this);
                     if (message(`dock::moveToDock`, this)) {
-                        unsubscribe(`ship::arrivedAtTheGate`, this);
+                        subscribe(`ship::handleCargo`, this);
+                    }
+                    else {
+                        subscribe(`ship::arrivedAtTheGate`, this);
                     }
                 }.bind(this))
                     .start();
@@ -1457,6 +1459,7 @@ class Ship_Ship {
             .chain(this
             .makeAnimation(target.receivingPoints)
             .onComplete(function () {
+            ;
             message("ship::handleCargo", this, target);
             this.animation = new Ship_TWEEN.Tween({})
                 .to({}, config.CARGO_HANDLING_TIME)
@@ -1543,7 +1546,11 @@ const app = new PIXI.Application({
 });
 function getTravelTime(traveler, target) {
     const a = traveler.x - target.x, b = traveler.y - target.y, c = Math.sqrt(a * a + b * b);
-    return c * 2;
+    return 2 * getDistance(traveler, target);
+}
+function getDistance(object1, object2) {
+    const a = object1.x - object2.x, b = object1.y - object2.y;
+    return Math.sqrt(a * a + b * b);
 }
 function subscribe(eventName, subscriber) {
     if (!(subscriber.handleMessage instanceof Function))
@@ -1578,7 +1585,7 @@ function message(eventName, initiator, target) {
 function shipsTooClose(currentShip) {
     let filteredShips = ships.filter(ship => ship.id !== currentShip.id && ship.type === currentShip.type);
     return Boolean(filteredShips
-        .filter(ship => Math.abs(currentShip.x - ship.x - ship.width) < config.SAFE_DISTANCE)
+        .filter(ship => getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE)
         .length);
 }
 function runApp() {
@@ -1587,7 +1594,8 @@ function runApp() {
     //setTimeout(createShip, 1000);
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
     createShip("green");
-    setTimeout(createShip.bind(null, "green"), config.SHIP_CREATION_INTERVAL / 2);
+    //setTimeout(createShip.bind(null, "red"), 1000);
+    setTimeout(createShip.bind(null, "green"), config.SHIP_CREATION_INTERVAL / 2 + 700);
     setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     // setTimeout(createShip.bind(null, "green"), 10000);
