@@ -1419,7 +1419,7 @@ class Ship_Ship {
         this.graphics = app.stage.addChild(graphics);
     }
     moveToGate() {
-        this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, 5000)
+        this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y })
             .onComplete(function () {
             subscribe("dock::moveToDock", this);
             message("ship::arrivedAtTheGate", this);
@@ -1435,10 +1435,10 @@ class Ship_Ship {
         }
     }
     moveToDock(target) {
-        this.animation = this.makeAnimation({ y: Harbor_Harbor.gateY, x: this.x }, 1000);
-        this.animation.chain(this.makeAnimation({ x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2, y: Harbor_Harbor.gateY }, 500)
+        this.animation = this.makeAnimation({ y: Harbor_Harbor.gateY, x: this.x });
+        this.animation.chain(this.makeAnimation({ x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2, y: Harbor_Harbor.gateY })
             .chain(this
-            .makeAnimation(target.receivingPoints, 2000)
+            .makeAnimation(target.receivingPoints)
             .onComplete(function () {
             message("ship::handleCargo", this, target);
             this.animation = new Ship_TWEEN.Tween({})
@@ -1453,16 +1453,16 @@ class Ship_Ship {
         this.animation.start();
     }
     moveToStart() {
-        this.animation = this.makeAnimation({ y: Harbor_Harbor.gateY, x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2 }, 2000);
+        this.animation = this.makeAnimation({ y: Harbor_Harbor.gateY, x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2 });
         this.animation.chain(this
-            .makeAnimation({ y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH }, 5000)
+            .makeAnimation({ y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH })
             .onComplete(function () {
             this.graphics.destroy();
         }.bind(this)));
         this.animation.start();
     }
-    makeAnimation(targetPosition, time) {
-        time = getTravelTime(this, targetPosition);
+    makeAnimation(targetPosition) {
+        const time = getTravelTime(this, targetPosition);
         return new Ship_TWEEN.Tween(this)
             .to(targetPosition, time)
             .easing(Ship_TWEEN.Easing.Linear.None)

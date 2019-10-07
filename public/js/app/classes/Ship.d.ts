@@ -28,7 +28,7 @@ export declare class Ship implements IShip {
     protected makeAnimation(targetPosition: {
         x: number;
         y: number;
-    }, time: number): TWEEN.Tween;
+    }): TWEEN.Tween;
     protected onAnimationUpdate(object: Ship): void;
     loaded: boolean;
     x: number;

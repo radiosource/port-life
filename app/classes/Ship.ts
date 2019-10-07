@@ -54,7 +54,7 @@ export class Ship implements IShip {
     }
 
     protected moveToGate() {
-        this.makeAnimation({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y}, 5000)
+        this.makeAnimation({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y})
             .onComplete(function () {
                 subscribe("dock::moveToDock", this);
                 message("ship::arrivedAtTheGate", this);
@@ -73,11 +73,11 @@ export class Ship implements IShip {
     }
 
     protected moveToDock(target: Dock) {
-        this.animation = this.makeAnimation({y: Harbor.gateY, x: this.x}, 1000);
+        this.animation = this.makeAnimation({y: Harbor.gateY, x: this.x});
         this.animation.chain(
-            this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY}, 500)
+            this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY})
                 .chain(this
-                    .makeAnimation(target.receivingPoints, 2000)
+                    .makeAnimation(target.receivingPoints)
                     .onComplete(function () {
                         message("ship::handleCargo", this, target);
                         this.animation = new TWEEN.Tween({})
@@ -95,9 +95,9 @@ export class Ship implements IShip {
     }
 
     protected moveToStart() {
-        this.animation = this.makeAnimation({y: Harbor.gateY, x: Harbor.gateX - Harbor.gateWidth * 2}, 2000);
+        this.animation = this.makeAnimation({y: Harbor.gateY, x: Harbor.gateX - Harbor.gateWidth * 2});
         this.animation.chain(this
-            .makeAnimation({y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH}, 5000)
+            .makeAnimation({y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH})
             .onComplete(function () {
                 this.graphics.destroy();
             }.bind(this))
@@ -105,8 +105,8 @@ export class Ship implements IShip {
         this.animation.start();
     }
 
-    protected makeAnimation(targetPosition: { x: number, y: number }, time: number): TWEEN.Tween {
-        time = getTravelTime(this, targetPosition);
+    protected makeAnimation(targetPosition: { x: number, y: number }): TWEEN.Tween {
+        const time = getTravelTime(this, targetPosition);
         return new TWEEN.Tween(this)
             .to(targetPosition, time)
             .easing(TWEEN.Easing.Linear.None)
