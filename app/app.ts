@@ -16,7 +16,6 @@ let harbor:Harbor;
 export const app = new PIXI.Application({
     width: config.WINDOW_WIDTH,
     height: config.WINDOW_HEIGHT,
-    //backgroundColor: 0xFFFFFF
     backgroundColor: config.WATER_COLOR
 });
 
@@ -47,6 +46,7 @@ export function unsubscribe(eventName:string, subscriber:any):void {
 
 export function message(eventName:string, initiator:any, target?:any):boolean {
     let result = false;
+    if (!(eventsListeners[eventName] instanceof Set)) return result;
     if (target) {
         if (!(target.handleMessage instanceof Function)) throw Error("message::Invalid target!");
         if (eventsListeners[eventName].has(target)) {
@@ -74,7 +74,7 @@ export function shipsTooClose(currentShip:Ship):boolean {
 
 
 export function runApp():void {
-    Object.assign(window, {eventsListeners})
+    Object.assign(window, {eventsListeners});
     document.body.appendChild(app.view);
 
 
@@ -82,12 +82,14 @@ export function runApp():void {
 
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
     createShip("green");
-    //setTimeout(createShip.bind(null, "red"), 1000);
-    setTimeout(createShip.bind(null, "green"), config.SHIP_CREATION_INTERVAL / 2 + 700);
-    setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
+
+    setTimeout(createShip.bind(null, "green"), 500);
+
+    //setTimeout(createShip.bind(null, "green"), config.SHIP_CREATION_INTERVAL / 2 + 700);
+    //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     // setTimeout(createShip.bind(null, "green"), 10000);
-    //let intervalId = setInterval(createShip.bind(null,"green"), config.SHIP_CREATION_INTERVAL / 2);
+    let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
     // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
 
@@ -100,7 +102,7 @@ export function runApp():void {
     harbor = new Harbor();
 
     function createShip(type?:string) {
-        if (Ship.quantity > 5) return;
+        if (Ship.quantity > 40) return;
         let ship = new Ship(type || getRandomShipType());
         ships.push(ship);
         Object.assign(window, {ships, ship});

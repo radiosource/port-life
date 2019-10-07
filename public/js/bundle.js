@@ -1430,12 +1430,12 @@ class Ship_Ship {
         this.animation = this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, function (object) {
             this.onAnimationUpdate(object);
             if (shipsTooClose(this)) {
+                console.log("shipsTooClose!!! :: " + this.id);
                 this.animation.pause();
                 this.subscribe("ship::queueHasMoved");
             }
         }.bind(this))
             .onComplete(function () {
-            this.unsubscribe("ship::queueHasMoved");
             this.subscribe("dock::moveToDock");
             message(`ship::arrivedAtTheGate`, this);
         }.bind(this))
@@ -1444,12 +1444,15 @@ class Ship_Ship {
     handleMessage(eventType, target) {
         switch (eventType) {
             case "ship::queueHasMoved":
+                console.log("ship::queueHasMoved!!");
                 this.unsubscribe("ship::queueHasMoved");
                 this.animation.resume();
                 break;
             case "dock::moveToDock":
-                this.unsubscribe("dock::moveToDock");
-                this.moveToDock(target);
+                if (target.loaded !== this.loaded) {
+                    this.unsubscribe("dock::moveToDock");
+                    this.moveToDock(target);
+                }
                 break;
         }
     }
@@ -1459,8 +1462,8 @@ class Ship_Ship {
             .chain(this
             .makeAnimation(target.receivingPoints)
             .onComplete(function () {
-            ;
             message("ship::handleCargo", this, target);
+            message(`ship::queueHasMoved`, this);
             this.animation = new Ship_TWEEN.Tween({})
                 .to({}, config.CARGO_HANDLING_TIME)
                 .onComplete(function (object) {
@@ -1541,7 +1544,6 @@ let harbor;
 const app = new PIXI.Application({
     width: config.WINDOW_WIDTH,
     height: config.WINDOW_HEIGHT,
-    //backgroundColor: 0xFFFFFF
     backgroundColor: config.WATER_COLOR
 });
 function getTravelTime(traveler, target) {
@@ -1566,6 +1568,8 @@ function unsubscribe(eventName, subscriber) {
 }
 function message(eventName, initiator, target) {
     let result = false;
+    if (!(eventsListeners[eventName] instanceof Set))
+        return result;
     if (target) {
         if (!(target.handleMessage instanceof Function))
             throw Error("message::Invalid target!");
@@ -1594,12 +1598,12 @@ function runApp() {
     //setTimeout(createShip, 1000);
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
     createShip("green");
-    //setTimeout(createShip.bind(null, "red"), 1000);
-    setTimeout(createShip.bind(null, "green"), config.SHIP_CREATION_INTERVAL / 2 + 700);
-    setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
+    setTimeout(createShip.bind(null, "green"), 500);
+    //setTimeout(createShip.bind(null, "green"), config.SHIP_CREATION_INTERVAL / 2 + 700);
+    //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     // setTimeout(createShip.bind(null, "green"), 10000);
-    //let intervalId = setInterval(createShip.bind(null,"green"), config.SHIP_CREATION_INTERVAL / 2);
+    let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
     // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
     app.ticker.add(() => {
@@ -1608,7 +1612,7 @@ function runApp() {
     });
     harbor = new Harbor_Harbor();
     function createShip(type) {
-        if (Ship_Ship.quantity > 5)
+        if (Ship_Ship.quantity > 40)
             return;
         let ship = new Ship_Ship(type || getRandomShipType());
         ships.push(ship);

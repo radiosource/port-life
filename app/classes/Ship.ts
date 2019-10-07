@@ -59,12 +59,12 @@ export class Ship implements IShip {
             function (object) {
                 this.onAnimationUpdate(object);
                 if (shipsTooClose(this)) {
+                    console.log("shipsTooClose!!! :: "+this.id);
                     this.animation.pause();
                     this.subscribe("ship::queueHasMoved");
                 }
             }.bind(this))
             .onComplete(function () {
-                this.unsubscribe("ship::queueHasMoved");
                 this.subscribe("dock::moveToDock");
                 message(`ship::arrivedAtTheGate`, this);
             }.bind(this))
@@ -75,12 +75,15 @@ export class Ship implements IShip {
     public handleMessage(eventType: string, target: any) {
         switch (eventType) {
             case "ship::queueHasMoved":
+                console.log("ship::queueHasMoved!!");
                 this.unsubscribe("ship::queueHasMoved");
                 this.animation.resume();
                 break;
             case "dock::moveToDock":
-                this.unsubscribe("dock::moveToDock");
-                this.moveToDock(target);
+                if(target.loaded!==this.loaded){
+                    this.unsubscribe("dock::moveToDock");
+                    this.moveToDock(target);
+                }
                 break;
         }
     }
@@ -91,8 +94,9 @@ export class Ship implements IShip {
             this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY})
                 .chain(this
                     .makeAnimation(target.receivingPoints)
-                    .onComplete(function () {;
+                    .onComplete(function () {
                         message("ship::handleCargo", this, target);
+                        message(`ship::queueHasMoved`, this);
                         this.animation = new TWEEN.Tween({})
                             .to({}, config.CARGO_HANDLING_TIME)
                             .onComplete(function (object) {
