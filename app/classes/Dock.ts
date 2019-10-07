@@ -27,7 +27,7 @@ export class Dock {
         this.makeGraphics();
 
         this.animation = new TWEEN.Tween(this);
-        subscribe("ship::arrivedAtTheGate", this);
+        subscribe(`ship::arrivedAtTheGate`, this);
     }
 
     get loaded() {
@@ -52,11 +52,12 @@ export class Dock {
     handleMessage(eventType: string, target: any) {
         switch (eventType) {
 
-            case "ship::arrivedAtTheGate" :
+            case `ship::arrivedAtTheGate` :
                 if (this.loaded !== target.loaded) {
-                    unsubscribe("ship::arrivedAtTheGate", this);
-                    subscribe("ship::handleCargo", this);
-                    message("dock::moveToDock", this, target);
+                    if (message("dock::moveToDock", this, target)) {
+                        unsubscribe("ship::arrivedAtTheGate", this);
+                        subscribe("ship::handleCargo", this);
+                    }
                 }
                 break;
 
@@ -68,7 +69,7 @@ export class Dock {
                         this.loaded = !this.loaded;
                         this.makeGraphics();
                         unsubscribe("ship::handleCargo", this);
-                        subscribe("ship::arrivedAtTheGate", this);
+                        subscribe(`ship::arrivedAtTheGate`, this);
                     }.bind(this))
                     .start()
                 ;

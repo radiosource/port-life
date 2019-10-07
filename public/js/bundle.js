@@ -1303,7 +1303,7 @@ class Dock_Dock {
         this.receivingPoints = { y: yStart + this.width / 2, x: this.width + 10 };
         this.makeGraphics();
         this.animation = new TWEEN.Tween(this);
-        subscribe("ship::arrivedAtTheGate", this);
+        subscribe(`ship::arrivedAtTheGate`, this);
     }
     get loaded() {
         return this._loaded;
@@ -1322,11 +1322,12 @@ class Dock_Dock {
     }
     handleMessage(eventType, target) {
         switch (eventType) {
-            case "ship::arrivedAtTheGate":
+            case `ship::arrivedAtTheGate`:
                 if (this.loaded !== target.loaded) {
-                    unsubscribe("ship::arrivedAtTheGate", this);
-                    subscribe("ship::handleCargo", this);
-                    message("dock::moveToDock", this, target);
+                    if (message("dock::moveToDock", this, target)) {
+                        unsubscribe("ship::arrivedAtTheGate", this);
+                        subscribe("ship::handleCargo", this);
+                    }
                 }
                 break;
             case "ship::handleCargo":
@@ -1336,7 +1337,7 @@ class Dock_Dock {
                     this.loaded = !this.loaded;
                     this.makeGraphics();
                     unsubscribe("ship::handleCargo", this);
-                    subscribe("ship::arrivedAtTheGate", this);
+                    subscribe(`ship::arrivedAtTheGate`, this);
                 }.bind(this))
                     .start();
                 break;
@@ -1422,7 +1423,7 @@ class Ship_Ship {
         this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y })
             .onComplete(function () {
             subscribe("dock::moveToDock", this);
-            message("ship::arrivedAtTheGate", this);
+            message(`ship::arrivedAtTheGate`, this);
         }.bind(this))
             .start();
     }
@@ -1535,18 +1536,22 @@ function unsubscribe(eventName, subscriber) {
     eventsListeners[eventName].delete(subscriber);
 }
 function message(eventName, initiator, target) {
+    console.log("message::" + eventName);
     if (target) {
         if (!(target.handleMessage instanceof Function))
             throw Error("message::Invalid target!");
         if (eventsListeners[eventName].has(target)) {
             target.handleMessage(eventName, initiator);
+            return true;
         }
     }
     else {
         for (let listener of eventsListeners[eventName]) {
             listener.handleMessage(eventName, initiator);
         }
+        return Boolean(eventsListeners[eventName].size);
     }
+    return false;
 }
 function findSuitableDock(shipHaveCargo) {
     return harbor.docs.filter((dock) => dock.loaded !== shipHaveCargo)[0];
@@ -1566,7 +1571,8 @@ function runApp() {
     //setTimeout(createShip, 1000);
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
     createShip("red");
-    //setTimeout(createShip.bind(null, "green"), 5000);
+    // setTimeout(createShip.bind(null, "red"), 5000);
+    // setTimeout(createShip.bind(null, "green"), 10000);
     let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
     // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);

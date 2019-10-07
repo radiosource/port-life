@@ -57,7 +57,7 @@ export class Ship implements IShip {
         this.makeAnimation({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y})
             .onComplete(function () {
                 subscribe("dock::moveToDock", this);
-                message("ship::arrivedAtTheGate", this);
+                message(`ship::arrivedAtTheGate`, this);
             }.bind(this))
             .start()
 

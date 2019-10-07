@@ -39,16 +39,20 @@ export function unsubscribe(eventName: string, subscriber: any): void {
 }
 
 export function message(eventName: string, initiator: any, target?: any) {
+    console.log("message::" + eventName);
     if (target) {
         if (!(target.handleMessage instanceof Function)) throw Error("message::Invalid target!");
         if (eventsListeners[eventName].has(target)) {
             target.handleMessage(eventName, initiator);
+            return true;
         }
     } else {
         for (let listener of eventsListeners[eventName]) {
             listener.handleMessage(eventName, initiator);
         }
+        return Boolean(eventsListeners[eventName].size);
     }
+    return false;
 }
 
 export function findSuitableDock(shipHaveCargo: boolean): any {
@@ -78,7 +82,8 @@ export function runApp(): void {
 
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
     createShip("red");
-    //setTimeout(createShip.bind(null, "green"), 5000);
+    // setTimeout(createShip.bind(null, "red"), 5000);
+    // setTimeout(createShip.bind(null, "green"), 10000);
     let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
     // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
