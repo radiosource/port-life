@@ -1,7 +1,7 @@
 import {config, shipTypes} from '../config/default';
 import {Harbor} from "./Harbor";
 import {Ship} from "./Ship";
-import {app, notify} from "../app";
+import {app, subscribe, unsubscribe, message} from "../app";
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
@@ -21,12 +21,14 @@ export class Dock {
     yStart: number;
 
     constructor(yStart: number) {
+        Dock.quantity++;
         this.id = Dock.quantity;
         this.yStart = yStart;
         this.receivingPoints = {y: yStart + this.width / 2, x: this.width + 10};
         this.makeGraphics();
 
         this.animation = new TWEEN.Tween(this);
+        subscribe("ship::arrivedAtTheGate", this);
     }
 
     get loaded() {
@@ -46,17 +48,29 @@ export class Dock {
         graphics.endFill();
         this.graphics && this.graphics.destroy();
         this.graphics = app.stage.addChild(graphics);
+
     }
 
     handleMessage(eventType: string, target: any) {
-        console.log("handleMessage", eventType);
         switch (eventType) {
+
+            case "ship::arrivedAtTheGate" :
+                if (this.loaded !== target.loaded) {
+                    unsubscribe("ship::arrivedAtTheGate", this);
+                    subscribe("ship::handleCargo", this);
+                    message("dock::moveToDock", this, target);
+                }
+                break;
+
+
             case "ship::handleCargo" :
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
                     .onComplete(function (object) {
                         this.loaded = !this.loaded;
                         this.makeGraphics();
+                        unsubscribe("ship::handleCargo", this);
+                        subscribe("ship::arrivedAtTheGate", this);
                     }.bind(this))
                     .start()
                 ;

@@ -8,8 +8,9 @@ import {clearInterval} from "timers";
 const TWEEN = require('@tweenjs/tween.js').default;
 Object.assign(window, {TWEEN});
 
-let types = ["red","red","green"];
+let types = ["red", "red", "green"];
 const ships: Ship[] = [];
+const eventsListeners = {};
 let harbor: Harbor;
 
 export const app = new PIXI.Application({
@@ -19,6 +20,41 @@ export const app = new PIXI.Application({
     backgroundColor: config.WATER_COLOR
 });
 
+export function getTravelTime(traveler: { x: number, y: number }, target: { x: number, y: number }): number {
+    const a = traveler.x - target.x,
+        b = traveler.y - target.y,
+        c = Math.sqrt(a * a + b * b);
+    return c * 2;
+}
+
+export function subscribe(eventName: string, subscriber: any): void {
+    if (!(subscriber.handleMessage instanceof Function)) throw Error("subscribe::Invalid subscriber");
+    if (!eventsListeners[eventName]) eventsListeners[eventName] = new Set();
+    eventsListeners[eventName].add(subscriber);
+}
+
+export function unsubscribe(eventName: string, subscriber: any): void {
+    if (!eventsListeners[eventName]) return;
+    eventsListeners[eventName].delete(subscriber);
+    eventName === "dock::moveToDock" && console.log("unsubscribe::" + eventsListeners[eventName].size);
+}
+
+export function message(eventName: string, initiator: any, target?: any) {
+    if (target) {
+        if (!(target.handleMessage instanceof Function)) throw Error("message::Invalid target!");
+        if (eventsListeners[eventName].has(target)) {
+            target.handleMessage(eventName, initiator);
+            return true;
+        }
+        return false;
+    } else {
+        for (let listener of eventsListeners[eventName]) {
+            listener.handleMessage(eventName, initiator);
+            return true;
+        }
+        return false;
+    }
+}
 
 export function findSuitableDock(shipHaveCargo: boolean): any {
     return harbor.docs.filter((dock: Dock) => dock.loaded !== shipHaveCargo)[0];
@@ -33,22 +69,23 @@ export function shipsTooClose(currentShip: Ship): boolean {
     );
 }
 
-export function notify(eventType, target):void {
+export function notify(eventType, target): void {
     [harbor, ...ships].forEach(listener => listener.handleMessage(eventType, target))
 }
 
 
 export function runApp(): void {
-
+    Object.assign(window, {eventsListeners})
     document.body.appendChild(app.view);
 
 
     //setTimeout(createShip, 1000);
 
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
-    createShip();
-    let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL);
-    Object.assign(window, {stop: () => clearInterval(intervalId)});
+    createShip("red");
+    setTimeout(createShip.bind(null,"green"), 5000);
+    //let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL);
+    // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
 
     app.ticker.add(() => {
@@ -59,15 +96,14 @@ export function runApp(): void {
 
     harbor = new Harbor();
 
-    function createShip() {
-        if(Ship.quantity >5) return;
-        let ship = new Ship(getRandomShipType());
+    function createShip(type?: string) {
+        if (Ship.quantity > 5) return;
+        let ship = new Ship(type || getRandomShipType());
         ships.push(ship);
         Object.assign(window, {ships, ship});
     }
 
     function getRandomShipType(): string {
-        //return "red";
         const shipTypesList = Object.keys(shipTypes);
         const randomNumber = parseInt(String(Math.random() * 100));
         //return types.shift();
@@ -78,6 +114,7 @@ export function runApp(): void {
     function animate(): void {
         requestAnimationFrame(animate);
         TWEEN.update();
+
     }
 
     animate();

@@ -1,5 +1,5 @@
 import {config} from '../config/default';
-import {app, notify} from "../app";
+import {app, subscribe, unsubscribe, message} from "../app";
 import {Dock} from "./Dock";
 import {Ship} from "./Ship";
 
@@ -31,18 +31,19 @@ export class Harbor {
         for (let x = 0; x < config.DOCKS_COUNT; x++) {
             this.docs.push(new Dock(config.WINDOW_HEIGHT / 4 * x))
         }
+        Object.assign(window,{docs:this.docs})
     }
 
     public handleMessage(eventType: string, target: Ship) {
-        console.log("handleMessage", eventType);
-        switch (eventType) {
-            case("ship::arrivedAtTheGate"):
-                const suitableDocks = this.docs.filter((dock: Dock) => dock.loaded !== target.loaded && !dock.busy);
-                if (suitableDocks.length) {
-                    suitableDocks[0].busy = true;
-                    target.handleMessage("harbor::moveToDock", suitableDocks[0]);
-                }
-                break;
-        }
+        //console.log("handleMessage", eventType);
+        // switch (eventType) {
+        //     case("ship::arrivedAtTheGate"):
+        //         const suitableDocks = this.docs.filter((dock: Dock) => dock.loaded !== target.loaded && !dock.busy);
+        //         if (suitableDocks.length) {
+        //             suitableDocks[0].busy = true;
+        //             target.handleMessage("harbor::moveToDock", suitableDocks[0]);
+        //         }
+        //         break;
+        // }
     }
 }

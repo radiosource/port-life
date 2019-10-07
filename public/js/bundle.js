@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 2);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -285,7 +285,6 @@ TWEEN.Tween.prototype = {
 		this._startTime += this._delayTime;
 
 		for (var property in this._valuesEnd) {
-
 			// Check if an Array was provided as property value
 			if (this._valuesEnd[property] instanceof Array) {
 
@@ -1246,295 +1245,6 @@ process.umask = function() { return 0; };
 
 /***/ }),
 /* 2 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || new Function("return this")();
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global) {var scope = (typeof global !== "undefined" && global) ||
-            (typeof self !== "undefined" && self) ||
-            window;
-var apply = Function.prototype.apply;
-
-// DOM APIs, for completeness
-
-exports.setTimeout = function() {
-  return new Timeout(apply.call(setTimeout, scope, arguments), clearTimeout);
-};
-exports.setInterval = function() {
-  return new Timeout(apply.call(setInterval, scope, arguments), clearInterval);
-};
-exports.clearTimeout =
-exports.clearInterval = function(timeout) {
-  if (timeout) {
-    timeout.close();
-  }
-};
-
-function Timeout(id, clearFn) {
-  this._id = id;
-  this._clearFn = clearFn;
-}
-Timeout.prototype.unref = Timeout.prototype.ref = function() {};
-Timeout.prototype.close = function() {
-  this._clearFn.call(scope, this._id);
-};
-
-// Does not start the time, just sets up the members needed.
-exports.enroll = function(item, msecs) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = msecs;
-};
-
-exports.unenroll = function(item) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = -1;
-};
-
-exports._unrefActive = exports.active = function(item) {
-  clearTimeout(item._idleTimeoutId);
-
-  var msecs = item._idleTimeout;
-  if (msecs >= 0) {
-    item._idleTimeoutId = setTimeout(function onTimeout() {
-      if (item._onTimeout)
-        item._onTimeout();
-    }, msecs);
-  }
-};
-
-// setimmediate attaches itself to the global object
-__webpack_require__(4);
-// On some exotic environments, it's not clear which object `setimmediate` was
-// able to install onto.  Search each possibility in the same order as the
-// `setimmediate` library.
-exports.setImmediate = (typeof self !== "undefined" && self.setImmediate) ||
-                       (typeof global !== "undefined" && global.setImmediate) ||
-                       (this && this.setImmediate);
-exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
-                         (typeof global !== "undefined" && global.clearImmediate) ||
-                         (this && this.clearImmediate);
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(2)))
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
-    "use strict";
-
-    if (global.setImmediate) {
-        return;
-    }
-
-    var nextHandle = 1; // Spec says greater than zero
-    var tasksByHandle = {};
-    var currentlyRunningATask = false;
-    var doc = global.document;
-    var registerImmediate;
-
-    function setImmediate(callback) {
-      // Callback can either be a function or a string
-      if (typeof callback !== "function") {
-        callback = new Function("" + callback);
-      }
-      // Copy function arguments
-      var args = new Array(arguments.length - 1);
-      for (var i = 0; i < args.length; i++) {
-          args[i] = arguments[i + 1];
-      }
-      // Store and register the task
-      var task = { callback: callback, args: args };
-      tasksByHandle[nextHandle] = task;
-      registerImmediate(nextHandle);
-      return nextHandle++;
-    }
-
-    function clearImmediate(handle) {
-        delete tasksByHandle[handle];
-    }
-
-    function run(task) {
-        var callback = task.callback;
-        var args = task.args;
-        switch (args.length) {
-        case 0:
-            callback();
-            break;
-        case 1:
-            callback(args[0]);
-            break;
-        case 2:
-            callback(args[0], args[1]);
-            break;
-        case 3:
-            callback(args[0], args[1], args[2]);
-            break;
-        default:
-            callback.apply(undefined, args);
-            break;
-        }
-    }
-
-    function runIfPresent(handle) {
-        // From the spec: "Wait until any invocations of this algorithm started before this one have completed."
-        // So if we're currently running a task, we'll need to delay this invocation.
-        if (currentlyRunningATask) {
-            // Delay by doing a setTimeout. setImmediate was tried instead, but in Firefox 7 it generated a
-            // "too much recursion" error.
-            setTimeout(runIfPresent, 0, handle);
-        } else {
-            var task = tasksByHandle[handle];
-            if (task) {
-                currentlyRunningATask = true;
-                try {
-                    run(task);
-                } finally {
-                    clearImmediate(handle);
-                    currentlyRunningATask = false;
-                }
-            }
-        }
-    }
-
-    function installNextTickImplementation() {
-        registerImmediate = function(handle) {
-            process.nextTick(function () { runIfPresent(handle); });
-        };
-    }
-
-    function canUsePostMessage() {
-        // The test against `importScripts` prevents this implementation from being installed inside a web worker,
-        // where `global.postMessage` means something completely different and can't be used for this purpose.
-        if (global.postMessage && !global.importScripts) {
-            var postMessageIsAsynchronous = true;
-            var oldOnMessage = global.onmessage;
-            global.onmessage = function() {
-                postMessageIsAsynchronous = false;
-            };
-            global.postMessage("", "*");
-            global.onmessage = oldOnMessage;
-            return postMessageIsAsynchronous;
-        }
-    }
-
-    function installPostMessageImplementation() {
-        // Installs an event handler on `global` for the `message` event: see
-        // * https://developer.mozilla.org/en/DOM/window.postMessage
-        // * http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#crossDocumentMessages
-
-        var messagePrefix = "setImmediate$" + Math.random() + "$";
-        var onGlobalMessage = function(event) {
-            if (event.source === global &&
-                typeof event.data === "string" &&
-                event.data.indexOf(messagePrefix) === 0) {
-                runIfPresent(+event.data.slice(messagePrefix.length));
-            }
-        };
-
-        if (global.addEventListener) {
-            global.addEventListener("message", onGlobalMessage, false);
-        } else {
-            global.attachEvent("onmessage", onGlobalMessage);
-        }
-
-        registerImmediate = function(handle) {
-            global.postMessage(messagePrefix + handle, "*");
-        };
-    }
-
-    function installMessageChannelImplementation() {
-        var channel = new MessageChannel();
-        channel.port1.onmessage = function(event) {
-            var handle = event.data;
-            runIfPresent(handle);
-        };
-
-        registerImmediate = function(handle) {
-            channel.port2.postMessage(handle);
-        };
-    }
-
-    function installReadyStateChangeImplementation() {
-        var html = doc.documentElement;
-        registerImmediate = function(handle) {
-            // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
-            // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
-            var script = doc.createElement("script");
-            script.onreadystatechange = function () {
-                runIfPresent(handle);
-                script.onreadystatechange = null;
-                html.removeChild(script);
-                script = null;
-            };
-            html.appendChild(script);
-        };
-    }
-
-    function installSetTimeoutImplementation() {
-        registerImmediate = function(handle) {
-            setTimeout(runIfPresent, 0, handle);
-        };
-    }
-
-    // If supported, we should attach to the prototype of global, since that is where setTimeout et al. live.
-    var attachTo = Object.getPrototypeOf && Object.getPrototypeOf(global);
-    attachTo = attachTo && attachTo.setTimeout ? attachTo : global;
-
-    // Don't get fooled by e.g. browserify environments.
-    if ({}.toString.call(global.process) === "[object process]") {
-        // For Node.js before 0.9
-        installNextTickImplementation();
-
-    } else if (canUsePostMessage()) {
-        // For non-IE10 modern browsers
-        installPostMessageImplementation();
-
-    } else if (global.MessageChannel) {
-        // For web workers, where supported
-        installMessageChannelImplementation();
-
-    } else if (doc && "onreadystatechange" in doc.createElement("script")) {
-        // For IE 6–8
-        installReadyStateChangeImplementation();
-
-    } else {
-        // For older browsers
-        installSetTimeoutImplementation();
-    }
-
-    attachTo.setImmediate = setImmediate;
-    attachTo.clearImmediate = clearImmediate;
-}(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(2), __webpack_require__(1)))
-
-/***/ }),
-/* 5 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1586,13 +1296,15 @@ class Dock_Dock {
         this.busy = false;
         this.height = config.WINDOW_HEIGHT / 4 - 10;
         this.width = config.SHIP_HEIGHT;
-        this._loaded = false;
+        this._loaded = true;
         this.color = 0xd4af37;
+        Dock_Dock.quantity++;
         this.id = Dock_Dock.quantity;
         this.yStart = yStart;
         this.receivingPoints = { y: yStart + this.width / 2, x: this.width + 10 };
         this.makeGraphics();
         this.animation = new TWEEN.Tween(this);
+        subscribe("ship::arrivedAtTheGate", this);
     }
     get loaded() {
         return this._loaded;
@@ -1611,14 +1323,25 @@ class Dock_Dock {
         this.graphics = app.stage.addChild(graphics);
     }
     handleMessage(eventType, target) {
-        console.log("handleMessage", eventType);
         switch (eventType) {
+            // case "ship::rogerThat":
+            //     unsubscribe("ship::arrivedAtTheGate", this);
+            //     break;
+            case "ship::arrivedAtTheGate":
+                if (this.loaded !== target.loaded) {
+                    unsubscribe("ship::arrivedAtTheGate", this);
+                    subscribe("ship::handleCargo", this);
+                    message("dock::moveToDock", this, target);
+                }
+                break;
             case "ship::handleCargo":
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
                     .onComplete(function (object) {
                     this.loaded = !this.loaded;
                     this.makeGraphics();
+                    unsubscribe("ship::handleCargo", this);
+                    subscribe("ship::arrivedAtTheGate", this);
                 }.bind(this))
                     .start();
                 break;
@@ -1648,18 +1371,19 @@ class Harbor_Harbor {
         for (let x = 0; x < config.DOCKS_COUNT; x++) {
             this.docs.push(new Dock_Dock(config.WINDOW_HEIGHT / 4 * x));
         }
+        Object.assign(window, { docs: this.docs });
     }
     handleMessage(eventType, target) {
-        console.log("handleMessage", eventType);
-        switch (eventType) {
-            case ("ship::arrivedAtTheGate"):
-                const suitableDocks = this.docs.filter((dock) => dock.loaded !== target.loaded && !dock.busy);
-                if (suitableDocks.length) {
-                    suitableDocks[0].busy = true;
-                    target.handleMessage("harbor::moveToDock", suitableDocks[0]);
-                }
-                break;
-        }
+        //console.log("handleMessage", eventType);
+        // switch (eventType) {
+        //     case("ship::arrivedAtTheGate"):
+        //         const suitableDocks = this.docs.filter((dock: Dock) => dock.loaded !== target.loaded && !dock.busy);
+        //         if (suitableDocks.length) {
+        //             suitableDocks[0].busy = true;
+        //             target.handleMessage("harbor::moveToDock", suitableDocks[0]);
+        //         }
+        //         break;
+        // }
     }
 }
 Harbor_Harbor.quantity = 0;
@@ -1700,18 +1424,18 @@ class Ship_Ship {
         this.graphics = app.stage.addChild(graphics);
     }
     moveToGate() {
-        this.animation
-            .to({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, 5000)
-            .easing(Ship_TWEEN.Easing.Linear.None)
-            .onUpdate(this.onAnimationUpdate)
+        this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, 5000)
             .onComplete(function () {
-            notify("ship::arrivedAtTheGate", this);
+            subscribe("dock::moveToDock", this);
+            message("ship::arrivedAtTheGate", this);
         }.bind(this))
             .start();
     }
     handleMessage(eventType, target) {
         switch (eventType) {
-            case "harbor::moveToDock":
+            case "dock::moveToDock":
+                unsubscribe("dock::moveToDock", this);
+                //message("ship::rogerThat", this, target);
                 this.moveToDock(target);
                 break;
         }
@@ -1722,7 +1446,7 @@ class Ship_Ship {
             .chain(this
             .makeAnimation(target.receivingPoints, 2000)
             .onComplete(function () {
-            target.handleMessage("ship::handleCargo", this);
+            message("ship::handleCargo", this, target);
             this.animation = new Ship_TWEEN.Tween({})
                 .to({}, config.CARGO_HANDLING_TIME)
                 .onComplete(function (object) {
@@ -1744,6 +1468,7 @@ class Ship_Ship {
         this.animation.start();
     }
     makeAnimation(targetPosition, time) {
+        time = getTravelTime(this, targetPosition);
         return new Ship_TWEEN.Tween(this)
             .to(targetPosition, time)
             .easing(Ship_TWEEN.Easing.Linear.None)
@@ -1782,11 +1507,7 @@ class Ship_Ship {
 }
 Ship_Ship.quantity = 0;
 
-// EXTERNAL MODULE: ./node_modules/timers-browserify/main.js
-var main = __webpack_require__(3);
-
 // CONCATENATED MODULE: ./app/app.ts
-
 
 
 
@@ -1795,6 +1516,7 @@ const app_TWEEN = __webpack_require__(0).default;
 Object.assign(window, { TWEEN: app_TWEEN });
 let types = ["red", "red", "green"];
 const ships = [];
+const eventsListeners = {};
 let harbor;
 const app = new PIXI.Application({
     width: config.WINDOW_WIDTH,
@@ -1802,6 +1524,44 @@ const app = new PIXI.Application({
     //backgroundColor: 0xFFFFFF
     backgroundColor: config.WATER_COLOR
 });
+function getTravelTime(traveler, target) {
+    const a = traveler.x - target.x, b = traveler.y - target.y, c = Math.sqrt(a * a + b * b);
+    return c * 2;
+}
+function subscribe(eventName, subscriber) {
+    if (!(subscriber.handleMessage instanceof Function))
+        throw Error("subscribe::Invalid subscriber");
+    if (!eventsListeners[eventName])
+        eventsListeners[eventName] = new Set();
+    eventsListeners[eventName].add(subscriber);
+}
+function unsubscribe(eventName, subscriber) {
+    //console.log("unsubscribe::"+eventName);
+    if (!eventsListeners[eventName])
+        return;
+    eventsListeners[eventName].delete(subscriber);
+    eventName === "dock::moveToDock" && console.log("unsubscribe::" + eventsListeners[eventName].size);
+}
+function message(eventName, initiator, target) {
+    if (target) {
+        if (!(target.handleMessage instanceof Function))
+            throw Error("message::Invalid target!");
+        console.log(`message to target::${eventName}, initiator.id::${initiator.id}, target.id::${target.id} ` + eventsListeners[eventName].has(target));
+        if (eventsListeners[eventName].has(target)) {
+            target.handleMessage(eventName, initiator);
+            return true;
+        }
+        return false;
+    }
+    else {
+        //console.log(`message to all::${eventName}, initiator.id::${initiator.id}`);
+        for (let listener of eventsListeners[eventName]) {
+            listener.handleMessage(eventName, initiator);
+            return true;
+        }
+        return false;
+    }
+}
 function findSuitableDock(shipHaveCargo) {
     return harbor.docs.filter((dock) => dock.loaded !== shipHaveCargo)[0];
 }
@@ -1815,27 +1575,28 @@ function notify(eventType, target) {
     [harbor, ...ships].forEach(listener => listener.handleMessage(eventType, target));
 }
 function runApp() {
+    Object.assign(window, { eventsListeners });
     document.body.appendChild(app.view);
     //setTimeout(createShip, 1000);
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
-    createShip();
-    let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL);
-    Object.assign(window, { stop: () => Object(main["clearInterval"])(intervalId) });
+    createShip("green");
+    //setTimeout(createShip.bind(null,"green"), 5000);
+    //let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL);
+    // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
     app.ticker.add(() => {
         //createShip()
         //setInterval(createShip, 1000)
     });
     harbor = new Harbor_Harbor();
-    function createShip() {
+    function createShip(type) {
         if (Ship_Ship.quantity > 5)
             return;
-        let ship = new Ship_Ship(getRandomShipType());
+        let ship = new Ship_Ship(type || getRandomShipType());
         ships.push(ship);
         Object.assign(window, { ships, ship });
     }
     function getRandomShipType() {
-        //return "red";
         const shipTypesList = Object.keys(shipTypes);
         const randomNumber = parseInt(String(Math.random() * 100));
         //return types.shift();
