@@ -71,6 +71,9 @@ export class Dock {
                         unsubscribe("ship::handleCargo", this);
                         subscribe(`ship::arrivedAtTheGate`, this);
                         //message(`dock::cargoHandlingFinished`, this);
+                        if(message(`dock::moveToDock`, this)){
+                            unsubscribe(`ship::arrivedAtTheGate`, this);
+                        }
                     }.bind(this))
                     .start()
                 ;

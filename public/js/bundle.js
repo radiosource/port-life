@@ -1338,6 +1338,10 @@ class Dock_Dock {
                     this.makeGraphics();
                     unsubscribe("ship::handleCargo", this);
                     subscribe(`ship::arrivedAtTheGate`, this);
+                    //message(`dock::cargoHandlingFinished`, this);
+                    if (message(`dock::moveToDock`, this)) {
+                        unsubscribe(`ship::arrivedAtTheGate`, this);
+                    }
                 }.bind(this))
                     .start();
                 break;
@@ -1583,6 +1587,7 @@ function runApp() {
     //setTimeout(createShip, 1000);
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
     createShip("green");
+    setTimeout(createShip.bind(null, "green"), config.SHIP_CREATION_INTERVAL / 2);
     setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     // setTimeout(createShip.bind(null, "green"), 10000);

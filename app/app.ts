@@ -75,6 +75,8 @@ export function runApp(): void {
 
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
     createShip("green");
+
+     setTimeout(createShip.bind(null, "green"), config.SHIP_CREATION_INTERVAL / 2);
      setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
      //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     // setTimeout(createShip.bind(null, "green"), 10000);
