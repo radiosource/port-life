@@ -3,7 +3,7 @@ import {Dock} from './Dock';
 import {IShip} from '../interfaces/IShip';
 import {IShipTypes, IShipType} from '../interfaces/IShipTypes';
 import {shipTypes, config} from '../config/default';
-import {app, shipsTooClose, subscribe, unsubscribe, message, getTravelTime} from '../app';
+import {app, shipsTooClose, subscribe, unsubscribe, message, getTravelTime, getDistance} from '../app';
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
@@ -54,19 +54,18 @@ export class Ship implements IShip {
     }
 
     protected moveToGate() {
-        //shipsTooClose
+        this.subscribe("ship::queueHasMoved");
         this.animation = this.makeAnimation({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y},
             function (object) {
                 this.onAnimationUpdate(object);
                 if (shipsTooClose(this)) {
-                    console.log("shipsTooClose!!! :: "+this.id);
                     this.animation.pause();
-                    this.subscribe("ship::queueHasMoved");
                 }
             }.bind(this))
             .onComplete(function () {
                 this.subscribe("dock::moveToDock");
                 message(`ship::arrivedAtTheGate`, this);
+                message(`ship::queueHasMoved`, this);
             }.bind(this))
             .start()
 
@@ -75,9 +74,8 @@ export class Ship implements IShip {
     public handleMessage(eventType: string, target: any) {
         switch (eventType) {
             case "ship::queueHasMoved":
-                console.log("ship::queueHasMoved!!");
-                this.unsubscribe("ship::queueHasMoved");
-                this.animation.resume();
+                //this.unsubscribe("ship::queueHasMoved");
+                this.animation.isPaused() && this.animation.resume();
                 break;
             case "dock::moveToDock":
                 if(target.loaded!==this.loaded){
@@ -89,6 +87,7 @@ export class Ship implements IShip {
     }
 
     protected moveToDock(target: Dock) {
+        message(`ship::queueHasMoved`, this);
         this.animation = this.makeAnimation({y: Harbor.gateY, x: this.x});
         this.animation.chain(
             this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY})
@@ -96,10 +95,10 @@ export class Ship implements IShip {
                     .makeAnimation(target.receivingPoints)
                     .onComplete(function () {
                         message("ship::handleCargo", this, target);
-                        message(`ship::queueHasMoved`, this);
                         this.animation = new TWEEN.Tween({})
                             .to({}, config.CARGO_HANDLING_TIME)
                             .onComplete(function (object) {
+                                message(`ship::queueHasMoved`, this);
                                 this.loaded = !this.loaded;
                                 this.makeGraphics();
                                 this.moveToStart();

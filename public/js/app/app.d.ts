@@ -18,5 +18,5 @@ export declare function getDistance(object1: {
 export declare function subscribe(eventName: string, subscriber: any): void;
 export declare function unsubscribe(eventName: string, subscriber: any): void;
 export declare function message(eventName: string, initiator: any, target?: any): boolean;
-export declare function shipsTooClose(currentShip: Ship): boolean;
+export declare function shipsTooClose(currentShip: Ship): any;
 export declare function runApp(): void;

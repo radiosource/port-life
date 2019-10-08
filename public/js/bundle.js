@@ -285,7 +285,6 @@ TWEEN.Tween.prototype = {
 		this._startTime += this._delayTime;
 
 		for (var property in this._valuesEnd) {
-
 			// Check if an Array was provided as property value
 			if (this._valuesEnd[property] instanceof Array) {
 
@@ -1426,27 +1425,30 @@ class Ship_Ship {
         this.graphics = app.stage.addChild(graphics);
     }
     moveToGate() {
-        //shipsTooClose
+        this.subscribe("ship::queueHasMoved");
         this.animation = this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, function (object) {
             this.onAnimationUpdate(object);
-            if (shipsTooClose(this)) {
-                console.log("shipsTooClose!!! :: " + this.id);
+            let _ships = shipsTooClose(this);
+            if (_ships.length) {
+                console.log("shipsTooClose! for " + this.id);
+                console.log(this);
+                console.log(_ships[0].animation.isPaused());
+                console.log(getDistance(this, _ships[0]));
                 this.animation.pause();
-                this.subscribe("ship::queueHasMoved");
             }
         }.bind(this))
             .onComplete(function () {
             this.subscribe("dock::moveToDock");
             message(`ship::arrivedAtTheGate`, this);
+            message(`ship::queueHasMoved`, this);
         }.bind(this))
             .start();
     }
     handleMessage(eventType, target) {
         switch (eventType) {
             case "ship::queueHasMoved":
-                console.log("ship::queueHasMoved!!");
-                this.unsubscribe("ship::queueHasMoved");
-                this.animation.resume();
+                //this.unsubscribe("ship::queueHasMoved");
+                this.animation.isPaused() && this.animation.resume();
                 break;
             case "dock::moveToDock":
                 if (target.loaded !== this.loaded) {
@@ -1457,16 +1459,17 @@ class Ship_Ship {
         }
     }
     moveToDock(target) {
+        message(`ship::queueHasMoved`, this);
         this.animation = this.makeAnimation({ y: Harbor_Harbor.gateY, x: this.x });
         this.animation.chain(this.makeAnimation({ x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2, y: Harbor_Harbor.gateY })
             .chain(this
             .makeAnimation(target.receivingPoints)
             .onComplete(function () {
             message("ship::handleCargo", this, target);
-            message(`ship::queueHasMoved`, this);
             this.animation = new Ship_TWEEN.Tween({})
                 .to({}, config.CARGO_HANDLING_TIME)
                 .onComplete(function (object) {
+                message(`ship::queueHasMoved`, this);
                 this.loaded = !this.loaded;
                 this.makeGraphics();
                 this.moveToStart();
@@ -1544,7 +1547,7 @@ let harbor;
 const app = new PIXI.Application({
     width: config.WINDOW_WIDTH,
     height: config.WINDOW_HEIGHT,
-    backgroundColor: config.WATER_COLOR
+    backgroundColor: 0xFFFFFF,
 });
 function getTravelTime(traveler, target) {
     const a = traveler.x - target.x, b = traveler.y - target.y, c = Math.sqrt(a * a + b * b);
@@ -1579,21 +1582,24 @@ function message(eventName, initiator, target) {
         }
     }
     else {
-        for (let listener of eventsListeners[eventName]) {
+        for (let listener of eventsListeners[eventName].values()) {
             result = true;
+            eventName === 'ship::queueHasMoved' && console.log("queueHasMoved for " + listener.id);
             listener.handleMessage(eventName, initiator);
         }
     }
     return result;
 }
 function shipsTooClose(currentShip) {
-    let filteredShips = ships.filter(ship => ship.id !== currentShip.id && ship.type === currentShip.type);
-    return Boolean(filteredShips
-        .filter(ship => getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE)
-        .length);
+    let filteredShips = ships.filter(ship => ship.id !== currentShip.id
+        && ship.type === currentShip.type
+        && ship.x < currentShip.x);
+    let _ships = filteredShips
+        .filter(ship => getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE);
+    return _ships;
 }
 function runApp() {
-    Object.assign(window, { eventsListeners });
+    Object.assign(window, { eventsListeners, createShip });
     document.body.appendChild(app.view);
     //setTimeout(createShip, 1000);
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
@@ -1603,7 +1609,7 @@ function runApp() {
     //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     // setTimeout(createShip.bind(null, "green"), 10000);
-    let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
+    //let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
     // Object.assign(window, {stop: () => clearInterval(intervalId)});
     // setTimeout(window.stop, 10000);
     app.ticker.add(() => {
