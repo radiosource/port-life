@@ -1376,7 +1376,7 @@ class Dock_Dock {
         graphics.drawRect(0, this.yStart, this.width, this.height);
         graphics.endFill();
         this.graphics && this.graphics.destroy();
-        this.graphics = app.stage.addChild(graphics);
+        this.graphics = App_App.stage.addChild(graphics);
     }
     handleMessage(eventType, target) {
         switch (eventType) {
@@ -1426,7 +1426,7 @@ class Harbor_Harbor {
         graphics.drawRect(Harbor_Harbor.gateX - Harbor_Harbor.gateWidth, 0, Harbor_Harbor.gateWidth, Harbor_Harbor.gateY - config.SHIP_HEIGHT * 4);
         graphics.drawRect(Harbor_Harbor.gateX - Harbor_Harbor.gateWidth, Harbor_Harbor.gateY + config.SHIP_HEIGHT * 4, Harbor_Harbor.gateWidth, config.WINDOW_HEIGHT);
         graphics.endFill();
-        this.graphics = app.stage.addChild(graphics);
+        this.graphics = App_App.stage.addChild(graphics);
         for (let x = 0; x < config.DOCKS_COUNT; x++) {
             this.docs.push(new Dock_Dock(config.WINDOW_HEIGHT / 4 * x));
         }
@@ -1480,12 +1480,12 @@ class Ship_Ship {
         graphics.drawRect(this.x, this.y, this.width, this.height);
         graphics.endFill();
         this.graphics && this.graphics.destroy();
-        this.graphics = app.stage.addChild(graphics);
+        this.graphics = App_App.stage.addChild(graphics);
     }
     moveToGate() {
         this.animation = this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, function (object) {
             this.onAnimationUpdate(object);
-            if (shipsTooClose(this)) {
+            if (App_App.shipsTooClose(this)) {
                 Messenger.message("ship::queueHasMoved", this);
                 this.subscribe("ship::queueHasMoved");
                 this.animation.pause();
@@ -1501,7 +1501,7 @@ class Ship_Ship {
     handleMessage(eventType, target) {
         switch (eventType) {
             case "ship::queueHasMoved":
-                if (this.animation.isPaused() && !shipsTooClose(this)) {
+                if (this.animation.isPaused() && !App_App.shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
                     this.unsubscribe("ship::queueHasMoved");
                     Messenger.message("ship::queueHasMoved", this);
@@ -1589,69 +1589,64 @@ class Ship_Ship {
 }
 Ship_Ship.quantity = 0;
 
-// CONCATENATED MODULE: ./app/app.ts
+// CONCATENATED MODULE: ./app/App.ts
 
 
 
 
 
-const app_TWEEN = __webpack_require__(0).default;
-Object.assign(window, { TWEEN: app_TWEEN });
-const eventsListeners = {};
-let harbor;
-const app = new PIXI.Application({
+const App_TWEEN = __webpack_require__(0).default;
+Object.assign(window, { TWEEN: App_TWEEN });
+class App_App {
+    constructor() {
+        Object.assign(window, { createShip: this.createShip, ships: App_App.ships });
+        document.body.appendChild(App_App.app.view);
+        this.animate();
+        this.harbor = new Harbor_Harbor();
+        this.createShip("green");
+        setTimeout(this.createShip.bind(this, "red"), 2000);
+        App_App.app.ticker.add(() => {
+        });
+    }
+    static shipsTooClose(currentShip) {
+        for (let ship of App_App.ships) {
+            if (ship.id !== currentShip.id
+                && ship.type === currentShip.type
+                && ship.x < currentShip.x
+                && getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE) {
+                return true;
+            }
+        }
+        return false;
+    }
+    createShip(type) {
+        if (Ship_Ship.quantity > 40)
+            return;
+        let ship = new Ship_Ship(type || this.getRandomShipType());
+        App_App.ships.add(ship);
+        Object.assign(window, { ship });
+    }
+    getRandomShipType() {
+        const shipTypesList = Object.keys(shipTypes);
+        const randomNumber = parseInt(String(Math.random() * 100));
+        return shipTypesList[randomNumber % shipTypesList.length];
+    }
+    animate() {
+        requestAnimationFrame(this.animate.bind(this));
+        App_TWEEN.update();
+    }
+}
+App_App.ships = new Set();
+App_App.app = new PIXI.Application({
     width: config.WINDOW_WIDTH,
     height: config.WINDOW_HEIGHT,
     backgroundColor: 0xFFFFFF,
 });
-const ships = new Set();
-function shipsTooClose(currentShip) {
-    for (let ship of ships) {
-        if (ship.id !== currentShip.id
-            && ship.type === currentShip.type
-            && ship.x < currentShip.x
-            && getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE) {
-            return true;
-        }
-    }
-    return false;
-}
-function runApp() {
-    Object.assign(window, { eventsListeners, createShip });
-    document.body.appendChild(app.view);
-    createShip("green");
-    setTimeout(createShip.bind(null, "red"), 2000);
-    //let intervalId = setInterval(createShip, config.SHIP_CREATION_INTERVAL / 2);
-    // Object.assign(window, {stop: () => clearInterval(intervalId)});
-    // setTimeout(window.stop, 10000);
-    app.ticker.add(() => {
-        //createShip()
-        //setInterval(createShip, 1000)
-    });
-    harbor = new Harbor_Harbor();
-    function createShip(type) {
-        if (Ship_Ship.quantity > 40)
-            return;
-        let ship = new Ship_Ship(type || getRandomShipType());
-        ships.add(ship);
-        Object.assign(window, { ships, ship });
-    }
-    function getRandomShipType() {
-        const shipTypesList = Object.keys(shipTypes);
-        const randomNumber = parseInt(String(Math.random() * 100));
-        //return types.shift();
-        return shipTypesList[randomNumber % shipTypesList.length];
-    }
-    function animate() {
-        requestAnimationFrame(animate);
-        app_TWEEN.update();
-    }
-    animate();
-}
+App_App.stage = App_App.app.stage;
 
 // CONCATENATED MODULE: ./index.ts
 
-document.addEventListener('DOMContentLoaded', runApp);
+document.addEventListener('DOMContentLoaded', () => new App_App());
 
 
 /***/ })

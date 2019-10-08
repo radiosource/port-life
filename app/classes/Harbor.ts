@@ -1,5 +1,5 @@
 import {config} from '../config/default';
-import {app} from "../app";
+import {App} from "../App";
 import {Dock} from "./Dock";
 import {Ship} from "./Ship";
 
@@ -26,7 +26,7 @@ export class Harbor {
         graphics.drawRect(Harbor.gateX - Harbor.gateWidth, 0, Harbor.gateWidth, Harbor.gateY - config.SHIP_HEIGHT * 4);
         graphics.drawRect(Harbor.gateX - Harbor.gateWidth, Harbor.gateY + config.SHIP_HEIGHT * 4, Harbor.gateWidth, config.WINDOW_HEIGHT);
         graphics.endFill();
-        this.graphics = app.stage.addChild(graphics);
+        this.graphics = App.stage.addChild(graphics);
 
         for (let x = 0; x < config.DOCKS_COUNT; x++) {
             this.docs.push(new Dock(config.WINDOW_HEIGHT / 4 * x))

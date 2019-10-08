@@ -2,7 +2,7 @@ import {config, shipTypes} from '../config/default';
 import {Harbor} from "./Harbor";
 import {Messenger} from "./Messenger";
 import {Ship} from "./Ship";
-import {app} from "../app";
+import {App} from "../App";
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
@@ -46,7 +46,7 @@ export class Dock {
         graphics.drawRect(0, this.yStart, this.width, this.height);
         graphics.endFill();
         this.graphics && this.graphics.destroy();
-        this.graphics = app.stage.addChild(graphics);
+        this.graphics = App.stage.addChild(graphics);
 
     }
 

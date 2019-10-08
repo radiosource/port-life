@@ -4,7 +4,7 @@ import {Messenger} from './Messenger';
 import {IShip} from '../interfaces/IShip';
 import {IShipTypes, IShipType} from '../interfaces/IShipTypes';
 import {shipTypes, config} from '../config/default';
-import {app, shipsTooClose} from '../app';
+import {App} from '../App';
 import {getTravelTime, getDistance} from '../helper';
 
 
@@ -50,14 +50,14 @@ export class Ship implements IShip {
         graphics.drawRect(this.x, this.y, this.width, this.height);
         graphics.endFill();
         this.graphics && this.graphics.destroy();
-        this.graphics = app.stage.addChild(graphics);
+        this.graphics = App.stage.addChild(graphics);
     }
 
     protected moveToGate() {
         this.animation = this.makeAnimation({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y},
             function (object) {
                 this.onAnimationUpdate(object);
-                if (shipsTooClose(this)) {
+                if (App.shipsTooClose(this)) {
                     Messenger.message("ship::queueHasMoved", this);
                     this.subscribe("ship::queueHasMoved");
                     this.animation.pause();
@@ -75,7 +75,7 @@ export class Ship implements IShip {
     public handleMessage(eventType: string, target: any) {
         switch (eventType) {
             case "ship::queueHasMoved":
-                if (this.animation.isPaused() && !shipsTooClose(this)) {
+                if (this.animation.isPaused() && !App.shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
                     this.unsubscribe("ship::queueHasMoved");
                     Messenger.message("ship::queueHasMoved", this);

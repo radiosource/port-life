@@ -1,4 +1,4 @@
-export class Messenger {
+export abstract class Messenger {
     
     protected static eventsListeners = {};
 

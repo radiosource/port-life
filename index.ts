@@ -1,5 +1,5 @@
-import {runApp} from "./app/app";
+import {App} from "./app/App";
 
-document.addEventListener('DOMContentLoaded', runApp);
+document.addEventListener('DOMContentLoaded', () => new App());
 
 
