@@ -1,16 +1,16 @@
 import {Harbor} from './Harbor';
 import {Dock} from './Dock';
-import {Messenger} from './Messenger';
+import {withMessages} from '../mixins/withMessages';
 import {IShip} from '../interfaces/IShip';
 import {shipTypes, config} from '../config/default';
 import {App} from '../App';
-import {getTravelTime, shipsTooClose} from '../helper';
+import {getTravelTime, shipsTooClose, applyMixins} from '../helper';
 
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
 
-export class Ship implements IShip {
+export class Ship implements withMessages, IShip {
 
     static quantity = 0;
 
@@ -57,15 +57,15 @@ export class Ship implements IShip {
             function (object) {
                 this.onAnimationUpdate(object);
                 if (shipsTooClose(this)) {
-                    Messenger.message("ship::queueHasMoved", this);
+                    this.message("ship::queueHasMoved");
                     this.subscribe("ship::queueHasMoved");
                     this.animation.pause();
                 }
             }.bind(this))
             .onComplete(function () {
                 this.subscribe("dock::moveToDock");
-                Messenger.message(`ship::arrivedAtTheGate`, this);
-                Messenger.message(`ship::queueHasMoved`, this);
+                this.message(`ship::arrivedAtTheGate`);
+                this.message(`ship::queueHasMoved`);
             }.bind(this))
             .start()
 
@@ -77,7 +77,7 @@ export class Ship implements IShip {
                 if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
                     this.unsubscribe("ship::queueHasMoved");
-                    Messenger.message("ship::queueHasMoved", this);
+                    this.message("ship::queueHasMoved");
                 }
                 break;
             case "dock::moveToDock":
@@ -96,11 +96,11 @@ export class Ship implements IShip {
                 .chain(this
                     .makeAnimation(target.receivingPoints)
                     .onComplete(function () {
-                        Messenger.message("ship::handleCargo", this, target);
+                        this.message("ship::handleCargo", target);
                         this.animation = new TWEEN.Tween({})
                             .to({}, config.CARGO_HANDLING_TIME)
                             .onComplete(function (object) {
-                                Messenger.message(`ship::queueHasMoved`, this);
+                                this.message(`ship::queueHasMoved`);
                                 this.loaded = !this.loaded;
                                 this.makeGraphics();
                                 this.moveToStart();
@@ -112,7 +112,7 @@ export class Ship implements IShip {
         this.animation.start();
     }
 
-    protected moveToStart():void {
+    protected moveToStart(): void {
         this.animation = this.makeAnimation({y: Harbor.gateY, x: Harbor.gateX - Harbor.gateWidth * 2});
         this.animation.chain(this
             .makeAnimation({y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH})
@@ -131,17 +131,18 @@ export class Ship implements IShip {
             .onUpdate(customOnUpdate || this.onAnimationUpdate)
     }
 
-    protected onAnimationUpdate(object: Ship):void {
+    protected onAnimationUpdate(object: Ship): void {
         object.graphics.x -= object.prevX - object.x;
         object.graphics.y -= object.prevY - object.y;
     }
 
-    protected subscribe(event: string): void {
-        Messenger.subscribe(event, this);
+    subscribe(event: string): void {
     }
 
-    protected unsubscribe(event: string): void {
-        Messenger.unsubscribe(event, this);
+    unsubscribe(event: string): void {
+    }
+
+    message(event: string, target?: any): any {
     }
 
     get loaded(): boolean {
@@ -179,3 +180,5 @@ export class Ship implements IShip {
     }
 
 }
+
+applyMixins(Ship, [withMessages]);

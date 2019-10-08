@@ -1,8 +1,9 @@
 /// <reference types="pixi.js" />
 /// <reference types="tween.js" />
 import { Dock } from './Dock';
+import { withMessages } from '../mixins/withMessages';
 import { IShip } from '../interfaces/IShip';
-export declare class Ship implements IShip {
+export declare class Ship implements withMessages, IShip {
     static quantity: number;
     readonly id: number;
     readonly width: number;
@@ -27,8 +28,9 @@ export declare class Ship implements IShip {
         y: number;
     }, customOnUpdate?: Function): TWEEN.Tween;
     protected onAnimationUpdate(object: Ship): void;
-    protected subscribe(event: string): void;
-    protected unsubscribe(event: string): void;
+    subscribe(event: string): void;
+    unsubscribe(event: string): void;
+    message(event: string, target?: any): any;
     loaded: boolean;
     x: number;
     y: number;

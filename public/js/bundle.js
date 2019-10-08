@@ -1430,6 +1430,20 @@ Harbor_Harbor.gateX = config.WINDOW_WIDTH / 3;
 Harbor_Harbor.gateY = config.WINDOW_HEIGHT / 2;
 Harbor_Harbor.gateWidth = config.SHIP_WIDTH / 3;
 
+// CONCATENATED MODULE: ./app/mixins/withMessages.ts
+
+class withMessages_withMessages {
+    subscribe(event) {
+        Messenger.subscribe(event, this);
+    }
+    unsubscribe(event) {
+        Messenger.unsubscribe(event, this);
+    }
+    message(event, target) {
+        return Messenger.message(event, this, target);
+    }
+}
+
 // CONCATENATED MODULE: ./app/helper.ts
 
 
@@ -1451,6 +1465,13 @@ function getTravelTime(traveler, target) {
 function getDistance(object1, object2) {
     const a = object1.x - object2.x, b = object1.y - object2.y;
     return Math.sqrt(a * a + b * b);
+}
+function applyMixins(derivedCtor, baseCtors) {
+    baseCtors.forEach(baseCtor => {
+        Object.getOwnPropertyNames(baseCtor.prototype).forEach(name => {
+            derivedCtor.prototype[name] = baseCtor.prototype[name];
+        });
+    });
 }
 
 // CONCATENATED MODULE: ./app/classes/Ship.ts
@@ -1489,15 +1510,15 @@ class Ship_Ship {
         this.animation = this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, function (object) {
             this.onAnimationUpdate(object);
             if (shipsTooClose(this)) {
-                Messenger.message("ship::queueHasMoved", this);
+                this.message("ship::queueHasMoved");
                 this.subscribe("ship::queueHasMoved");
                 this.animation.pause();
             }
         }.bind(this))
             .onComplete(function () {
             this.subscribe("dock::moveToDock");
-            Messenger.message(`ship::arrivedAtTheGate`, this);
-            Messenger.message(`ship::queueHasMoved`, this);
+            this.message(`ship::arrivedAtTheGate`);
+            this.message(`ship::queueHasMoved`);
         }.bind(this))
             .start();
     }
@@ -1507,7 +1528,7 @@ class Ship_Ship {
                 if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
                     this.unsubscribe("ship::queueHasMoved");
-                    Messenger.message("ship::queueHasMoved", this);
+                    this.message("ship::queueHasMoved");
                 }
                 break;
             case "dock::moveToDock":
@@ -1524,11 +1545,11 @@ class Ship_Ship {
             .chain(this
             .makeAnimation(target.receivingPoints)
             .onComplete(function () {
-            Messenger.message("ship::handleCargo", this, target);
+            this.message("ship::handleCargo", target);
             this.animation = new Ship_TWEEN.Tween({})
                 .to({}, config.CARGO_HANDLING_TIME)
                 .onComplete(function (object) {
-                Messenger.message(`ship::queueHasMoved`, this);
+                this.message(`ship::queueHasMoved`);
                 this.loaded = !this.loaded;
                 this.makeGraphics();
                 this.moveToStart();
@@ -1558,10 +1579,10 @@ class Ship_Ship {
         object.graphics.y -= object.prevY - object.y;
     }
     subscribe(event) {
-        Messenger.subscribe(event, this);
     }
     unsubscribe(event) {
-        Messenger.unsubscribe(event, this);
+    }
+    message(event, target) {
     }
     get loaded() {
         return this._loaded;
@@ -1591,6 +1612,7 @@ class Ship_Ship {
     }
 }
 Ship_Ship.quantity = 0;
+applyMixins(Ship_Ship, [withMessages_withMessages]);
 
 // CONCATENATED MODULE: ./app/App.ts
 
@@ -1638,6 +1660,9 @@ App_App.stage = App_App.app.stage;
 // CONCATENATED MODULE: ./index.ts
 
 document.addEventListener('DOMContentLoaded', () => new App_App());
+// document.addEventListener('DOMContentLoaded', () => {
+//     console.log(new App1())
+// });
 
 
 /***/ })

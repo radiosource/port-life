@@ -30,3 +30,11 @@ export function getDistance(object1: { x: number, y: number }, object2: { x: num
     return Math.sqrt(a * a + b * b);
 
 }
+
+export function applyMixins(derivedCtor: any, baseCtors: any[]): void {
+    baseCtors.forEach(baseCtor => {
+        Object.getOwnPropertyNames(baseCtor.prototype).forEach(name => {
+            derivedCtor.prototype[name] = baseCtor.prototype[name];
+        });
+    });
+}
