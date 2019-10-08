@@ -105,6 +105,7 @@ export class Ship implements withMessages, IShip {
                 .chain(this
                     .makeAnimation(target.receivingPoints)
                     .onComplete(function () {
+                        this.message("ship::queueHasMoved");
                         this.message("ship::handleCargo", target);
                         this.animation = new TWEEN.Tween({})
                             .to({}, config.CARGO_HANDLING_TIME)

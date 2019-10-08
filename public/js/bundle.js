@@ -1799,6 +1799,7 @@ class Ship_Ship {
             .chain(this
             .makeAnimation(target.receivingPoints)
             .onComplete(function () {
+            this.message("ship::queueHasMoved");
             this.message("ship::handleCargo", target);
             this.animation = new Ship_TWEEN.Tween({})
                 .to({}, config.CARGO_HANDLING_TIME)
@@ -1933,9 +1934,9 @@ class App_App {
         document.body.appendChild(App_App.app.view);
         this.animate();
         this.harbor = new Harbor_Harbor();
-        this.createShip("green");
-        setTimeout(this.createShip.bind(this, "red"), 2000);
-        this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL / 2);
+        //this.createShip("green");
+        //setTimeout(this.createShip.bind(this, "red"), 2000);
+        //this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL / 3);
         Object.assign(window, {
             createShip: this.createShip,
             ships: App_App.ships,

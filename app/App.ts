@@ -31,9 +31,9 @@ export class App {
         this.animate();
 
         this.harbor = new Harbor();
-        this.createShip("green");
-        setTimeout(this.createShip.bind(this, "red"), 2000);
-        this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL / 2);
+        //this.createShip("green");
+        //setTimeout(this.createShip.bind(this, "red"), 2000);
+        //this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL / 3);
 
         Object.assign(window, {
             createShip: this.createShip,
