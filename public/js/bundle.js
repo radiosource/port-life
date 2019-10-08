@@ -1669,6 +1669,8 @@ class Harbor_Harbor {
             this.docs.push(new Dock_Dock(config.WINDOW_HEIGHT / 4 * x));
         }
         Object.assign(window, { docs: this.docs });
+        this.subscribe("ship::enter");
+        this.subscribe("ship::exit");
     }
     subscribe(event) {
     }
@@ -1690,7 +1692,7 @@ class Harbor_Harbor {
     }
 }
 Harbor_Harbor.quantity = 0;
-Harbor_Harbor.gateIsOpen = false;
+Harbor_Harbor.gateIsOpen = true;
 Harbor_Harbor.gateX = config.WINDOW_WIDTH / 3;
 Harbor_Harbor.gateY = config.WINDOW_HEIGHT / 2;
 Harbor_Harbor.gateWidth = config.SHIP_WIDTH / 3;
@@ -1788,8 +1790,9 @@ class Ship_Ship {
                 }
                 break;
             case "dock::moveToDock":
-                if (target.loaded !== this.loaded) {
+                if (target.loaded !== this.loaded && Harbor_Harbor.gateIsOpen) {
                     this.unsubscribe("dock::moveToDock");
+                    this.message("ship::enter");
                     this.message("ship::moveToDockAccepted", target);
                     this.moveToDock(target);
                 }
@@ -1803,7 +1806,10 @@ class Ship_Ship {
     moveToDock(target) {
         this.animation = this
             .makeAnimation({ y: Harbor_Harbor.gateY, x: this.x })
-            .onComplete(() => this.message("ship::queueHasMoved"));
+            .onComplete(() => {
+            this.message("ship::queueHasMoved");
+            this.message("ship::exit");
+        });
         this.animation.chain(this.makeAnimation({ x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2, y: Harbor_Harbor.gateY })
             .chain(this
             .makeAnimation(target.receivingPoints)
@@ -1886,24 +1892,20 @@ class Messenger {
         Messenger.eventsListeners[eventName].delete(subscriber);
     }
     static message(eventName, initiator, target) {
-        let result = false;
         if (!(Messenger.eventsListeners[eventName] instanceof Set))
-            return result;
+            return;
         if (target) {
             if (!(target.handleMessage instanceof Function))
                 throw Error("message::Invalid target!");
             if (Messenger.eventsListeners[eventName].has(target)) {
                 target.handleMessage(eventName, initiator);
-                result = true;
             }
         }
         else {
             for (let listener of Messenger.eventsListeners[eventName].values()) {
-                result = true;
                 listener.handleMessage(eventName, initiator);
             }
         }
-        return result;
     }
 }
 Messenger.eventsListeners = {};
@@ -1918,7 +1920,7 @@ class withMessages_withMessages {
         Messenger.unsubscribe(event, this);
     }
     message(event, target) {
-        return Messenger.message(event, this, target);
+        Messenger.message(event, this, target);
     }
 }
 
@@ -1983,9 +1985,6 @@ App_App.stage = App_App.app.stage;
 // CONCATENATED MODULE: ./index.ts
 
 document.addEventListener('DOMContentLoaded', () => new App_App());
-// document.addEventListener('DOMContentLoaded', () => {
-//     console.log(new App1())
-// });
 
 
 /***/ })

@@ -90,8 +90,9 @@ export class Ship implements withMessages, IShip {
                 }
                 break;
             case "dock::moveToDock":
-                if (target.loaded !== this.loaded) {
+                if (target.loaded !== this.loaded && Harbor.gateIsOpen) {
                     this.unsubscribe("dock::moveToDock");
+                    this.message("ship::enter");
                     this.message("ship::moveToDockAccepted", target);
                     this.moveToDock(target);
                 }
@@ -106,7 +107,10 @@ export class Ship implements withMessages, IShip {
     protected moveToDock(target: Dock): void {
         this.animation = this
             .makeAnimation({y: Harbor.gateY, x: this.x})
-            .onComplete(() => this.message("ship::queueHasMoved"));
+            .onComplete(() => {
+                this.message("ship::queueHasMoved");
+                this.message("ship::exit");
+            });
         this.animation.chain(
             this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY})
                 .chain(this

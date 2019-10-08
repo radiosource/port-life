@@ -19,7 +19,7 @@ export declare class Ship implements withMessages, IShip {
     protected _prevY: number;
     subscribe(event: string): void;
     unsubscribe(event: string): void;
-    message(event: string, target?: any): any;
+    message(event: string, target?: any): void;
     constructor(type: any);
     protected makeGraphics(): void;
     protected moveToGate(): void;
