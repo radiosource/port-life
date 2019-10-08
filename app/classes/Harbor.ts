@@ -24,7 +24,7 @@ export class Harbor implements withMessages {
     unsubscribe(event: string): void {
     }
 
-    message(event: string, target?: any): any {
+    message(event: string, target?: any): void {
     }
 
     constructor() {

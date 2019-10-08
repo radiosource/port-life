@@ -34,7 +34,7 @@ export class Ship implements withMessages, IShip {
     unsubscribe(event: string): void {
     }
 
-    message(event: string, target?: any): any {
+    message(event: string, target?: any): void {
     }
 
     constructor(type) {
@@ -92,8 +92,13 @@ export class Ship implements withMessages, IShip {
             case "dock::moveToDock":
                 if (target.loaded !== this.loaded) {
                     this.unsubscribe("dock::moveToDock");
+                    this.message("ship::moveToDockAccepted", target);
                     this.moveToDock(target);
                 }
+                break;
+            case "harbor:gateClosed":
+                break;
+            case "harbor:gateOpen":
                 break;
         }
     }

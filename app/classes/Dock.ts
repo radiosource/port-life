@@ -24,7 +24,7 @@ export class Dock implements withMessages {
     unsubscribe(event: string): void {
     }
 
-    message(event: string, target?: any): any {
+    message(event: string, target?: any): void {
     }
 
     constructor(yStart: number) {
@@ -62,27 +62,29 @@ export class Dock implements withMessages {
 
             case `ship::arrivedAtTheGate` :
                 if (this.loaded !== target.loaded) {
-                    if (this.message("dock::moveToDock", target)) {
-                        this.unsubscribe("ship::arrivedAtTheGate");
-                        this.subscribe("ship::handleCargo");
-                    }
+                    //this.unsubscribe(`ship::arrivedAtTheGate`);
+                    this.subscribe("ship::moveToDockAccepted");
+                    this.message(`dock::moveToDock`, target);
                 }
                 break;
 
+            case "ship::moveToDockAccepted":
+                this.unsubscribe("ship::moveToDockAccepted");
+                this.unsubscribe(`ship::arrivedAtTheGate`);
+                this.subscribe(`ship::handleCargo`);
+                break;
 
             case "ship::handleCargo" :
                 this.unsubscribe("ship::handleCargo");
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
-                    .onComplete(function (object) {
+                    .onComplete((object) => {
                         this.loaded = !this.loaded;
                         this.makeGraphics();
-                        if(this.message(`dock::moveToDock`)){
-                            this.subscribe(`ship::handleCargo`);
-                        }else{
-                            this.subscribe(`ship::arrivedAtTheGate`);
-                        }
-                    }.bind(this))
+                        this.subscribe("ship::moveToDockAccepted");
+                        this.subscribe(`ship::arrivedAtTheGate`);
+                        this.message(`dock::moveToDock`);
+                    })
                     .start()
                 ;
                 break;

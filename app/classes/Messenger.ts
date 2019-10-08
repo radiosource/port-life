@@ -1,5 +1,5 @@
 export abstract class Messenger {
-    
+
     protected static eventsListeners = {};
 
     static subscribe(eventName: string, subscriber: any): void {
@@ -13,21 +13,17 @@ export abstract class Messenger {
         Messenger.eventsListeners[eventName].delete(subscriber);
     }
 
-    static message(eventName: string, initiator: any, target?: any): boolean {
-        let result = false;
-        if (!(Messenger.eventsListeners[eventName] instanceof Set)) return result;
+    static message(eventName: string, initiator: any, target?: any): void {
+        if (!(Messenger.eventsListeners[eventName] instanceof Set)) return;
         if (target) {
             if (!(target.handleMessage instanceof Function)) throw Error("message::Invalid target!");
             if (Messenger.eventsListeners[eventName].has(target)) {
                 target.handleMessage(eventName, initiator);
-                result = true;
             }
         } else {
             for (let listener of Messenger.eventsListeners[eventName].values()) {
-                result = true;
                 listener.handleMessage(eventName, initiator);
             }
         }
-        return result;
     }
 }

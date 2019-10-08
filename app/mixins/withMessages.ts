@@ -9,7 +9,7 @@ export class withMessages {
         Messenger.unsubscribe(event, this);
     }
 
-    message(event: string, target?: any): boolean {
-        return Messenger.message(event, this, target);
+    message(event: string, target?: any): void {
+        Messenger.message(event, this, target);
     }
 }

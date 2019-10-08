@@ -1619,26 +1619,27 @@ class Dock_Dock {
         switch (eventType) {
             case `ship::arrivedAtTheGate`:
                 if (this.loaded !== target.loaded) {
-                    if (this.message("dock::moveToDock", target)) {
-                        this.unsubscribe("ship::arrivedAtTheGate");
-                        this.subscribe("ship::handleCargo");
-                    }
+                    //this.unsubscribe(`ship::arrivedAtTheGate`);
+                    this.subscribe("ship::moveToDockAccepted");
+                    this.message(`dock::moveToDock`, target);
                 }
+                break;
+            case "ship::moveToDockAccepted":
+                this.unsubscribe("ship::moveToDockAccepted");
+                this.unsubscribe(`ship::arrivedAtTheGate`);
+                this.subscribe(`ship::handleCargo`);
                 break;
             case "ship::handleCargo":
                 this.unsubscribe("ship::handleCargo");
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
-                    .onComplete(function (object) {
+                    .onComplete((object) => {
                     this.loaded = !this.loaded;
                     this.makeGraphics();
-                    if (this.message(`dock::moveToDock`)) {
-                        this.subscribe(`ship::handleCargo`);
-                    }
-                    else {
-                        this.subscribe(`ship::arrivedAtTheGate`);
-                    }
-                }.bind(this))
+                    this.subscribe("ship::moveToDockAccepted");
+                    this.subscribe(`ship::arrivedAtTheGate`);
+                    this.message(`dock::moveToDock`);
+                })
                     .start();
                 break;
         }
@@ -1789,8 +1790,13 @@ class Ship_Ship {
             case "dock::moveToDock":
                 if (target.loaded !== this.loaded) {
                     this.unsubscribe("dock::moveToDock");
+                    this.message("ship::moveToDockAccepted", target);
                     this.moveToDock(target);
                 }
+                break;
+            case "harbor:gateClosed":
+                break;
+            case "harbor:gateOpen":
                 break;
         }
     }
