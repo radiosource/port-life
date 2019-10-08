@@ -2,11 +2,12 @@ import {config} from '../config/default';
 import {App} from "../App";
 import {Dock} from "./Dock";
 import {Ship} from "./Ship";
+import {withMessages} from '../mixins/withMessages';
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
 
-export class Harbor {
+export class Harbor implements withMessages{
     static quantity = 0;
 
     static readonly gateX: number = config.WINDOW_WIDTH / 3;
@@ -17,6 +18,15 @@ export class Harbor {
     protected color: number = 0xd4af37;
     protected graphics: PIXI.Graphics;
     protected animation: TWEEN.Tween;
+
+    subscribe(event: string): void {
+    }
+
+    unsubscribe(event: string): void {
+    }
+
+    message(event: string, target?: any): any {
+    }
 
     constructor() {
         if (Harbor.quantity) throw Error("Only one harbor!");

@@ -4,7 +4,7 @@ import {withMessages} from '../mixins/withMessages';
 import {IShip} from '../interfaces/IShip';
 import {shipTypes, config} from '../config/default';
 import {App} from '../App';
-import {getTravelTime, shipsTooClose, applyMixins} from '../helper';
+import {getTravelTime, shipsTooClose} from '../helper';
 
 
 const TWEEN = require('@tweenjs/tween.js').default;
@@ -27,6 +27,15 @@ export class Ship implements withMessages, IShip {
     protected _y: number;
     protected _prevX: number;
     protected _prevY: number;
+
+    subscribe(event: string): void {
+    }
+
+    unsubscribe(event: string): void {
+    }
+
+    message(event: string, target?: any): any {
+    }
 
     constructor(type) {
         if (!shipTypes[type]) {
@@ -136,15 +145,6 @@ export class Ship implements withMessages, IShip {
         object.graphics.y -= object.prevY - object.y;
     }
 
-    subscribe(event: string): void {
-    }
-
-    unsubscribe(event: string): void {
-    }
-
-    message(event: string, target?: any): any {
-    }
-
     get loaded(): boolean {
         return this._loaded;
     }
@@ -181,4 +181,3 @@ export class Ship implements withMessages, IShip {
 
 }
 
-applyMixins(Ship, [withMessages]);

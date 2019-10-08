@@ -1,12 +1,10 @@
-import {config, shipTypes} from '../config/default';
-import {Harbor} from "./Harbor";
-import {Messenger} from "./Messenger";
-import {Ship} from "./Ship";
+import {config} from '../config/default';
 import {App} from "../App";
+import {withMessages} from "../mixins/withMessages";
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
-export class Dock {
+export class Dock implements withMessages {
     static quantity = 0;
     readonly id: number;
 
@@ -20,6 +18,15 @@ export class Dock {
     protected animation: TWEEN.Tween;
     yStart: number;
 
+    subscribe(event: string): void {
+    }
+
+    unsubscribe(event: string): void {
+    }
+
+    message(event: string, target?: any): any {
+    }
+
     constructor(yStart: number) {
         Dock.quantity++;
         this.id = Dock.quantity;
@@ -28,7 +35,7 @@ export class Dock {
         this.makeGraphics();
 
         this.animation = new TWEEN.Tween(this);
-        Messenger.subscribe(`ship::arrivedAtTheGate`, this);
+        this.subscribe(`ship::arrivedAtTheGate`);
     }
 
     get loaded() {
@@ -55,25 +62,25 @@ export class Dock {
 
             case `ship::arrivedAtTheGate` :
                 if (this.loaded !== target.loaded) {
-                    if (Messenger.message("dock::moveToDock", this, target)) {
-                        Messenger.unsubscribe("ship::arrivedAtTheGate", this);
-                        Messenger.subscribe("ship::handleCargo", this);
+                    if (this.message("dock::moveToDock", target)) {
+                        this.unsubscribe("ship::arrivedAtTheGate");
+                        this.subscribe("ship::handleCargo");
                     }
                 }
                 break;
 
 
             case "ship::handleCargo" :
-                Messenger.unsubscribe("ship::handleCargo", this);
+                this.unsubscribe("ship::handleCargo");
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
                     .onComplete(function (object) {
                         this.loaded = !this.loaded;
                         this.makeGraphics();
-                        if(Messenger.message(`dock::moveToDock`, this)){
-                            Messenger.subscribe(`ship::handleCargo`, this);
+                        if(this.message(`dock::moveToDock`)){
+                            this.subscribe(`ship::handleCargo`);
                         }else{
-                            Messenger.subscribe(`ship::arrivedAtTheGate`, this);
+                            this.subscribe(`ship::arrivedAtTheGate`);
                         }
                     }.bind(this))
                     .start()

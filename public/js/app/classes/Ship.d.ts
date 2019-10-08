@@ -17,6 +17,9 @@ export declare class Ship implements withMessages, IShip {
     protected _y: number;
     protected _prevX: number;
     protected _prevY: number;
+    subscribe(event: string): void;
+    unsubscribe(event: string): void;
+    message(event: string, target?: any): any;
     constructor(type: any);
     protected makeGraphics(): void;
     protected moveToGate(): void;
@@ -28,9 +31,6 @@ export declare class Ship implements withMessages, IShip {
         y: number;
     }, customOnUpdate?: Function): TWEEN.Tween;
     protected onAnimationUpdate(object: Ship): void;
-    subscribe(event: string): void;
-    unsubscribe(event: string): void;
-    message(event: string, target?: any): any;
     loaded: boolean;
     x: number;
     y: number;
