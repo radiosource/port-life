@@ -1,4 +1,3 @@
-import {getTravelTime, getDistance} from './helper';
 import {config} from "./config/default";
 import {Ship} from "./classes/Ship";
 import {Harbor} from "./classes/Harbor";
@@ -36,22 +35,7 @@ export class App {
         });
     }
 
-    static shipsTooClose(currentShip: Ship): boolean {
-        for (let ship of App.ships) {
-            if (
-                ship.id !== currentShip.id
-                && ship.type === currentShip.type
-                && ship.x < currentShip.x
-                && getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE
-            ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    protected createShip(type?: string) {
+    protected createShip(type?: string): void {
         if (Ship.quantity > 40) return;
         let ship = new Ship(type || this.getRandomShipType());
         App.ships.add(ship);

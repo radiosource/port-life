@@ -1250,26 +1250,6 @@ process.umask = function() { return 0; };
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 
-// CONCATENATED MODULE: ./app/helper.ts
-// export function shipsTooClose(currentShip: Ship): boolean {
-//     let filteredShips = ships.filter(
-//         ship => ship.id !== currentShip.id
-//             && ship.type === currentShip.type
-//             && ship.x < currentShip.x
-//     );
-//     let _ships = filteredShips
-//         .filter(ship => getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE);
-//     return Boolean(_ships.length);
-// }
-function getTravelTime(traveler, target) {
-    const a = traveler.x - target.x, b = traveler.y - target.y, c = Math.sqrt(a * a + b * b);
-    return 2 * getDistance(traveler, target);
-}
-function getDistance(object1, object2) {
-    const a = object1.x - object2.x, b = object1.y - object2.y;
-    return Math.sqrt(a * a + b * b);
-}
-
 // CONCATENATED MODULE: ./app/config/default.ts
 const SECOND = 1000;
 const WINDOW_WIDTH = window.innerWidth;
@@ -1450,6 +1430,29 @@ Harbor_Harbor.gateX = config.WINDOW_WIDTH / 3;
 Harbor_Harbor.gateY = config.WINDOW_HEIGHT / 2;
 Harbor_Harbor.gateWidth = config.SHIP_WIDTH / 3;
 
+// CONCATENATED MODULE: ./app/helper.ts
+
+
+function shipsTooClose(currentShip) {
+    for (let ship of App_App.ships) {
+        if (ship.id !== currentShip.id
+            && ship.type === currentShip.type
+            && ship.x < currentShip.x
+            && getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE) {
+            return true;
+        }
+    }
+    return false;
+}
+function getTravelTime(traveler, target) {
+    const a = traveler.x - target.x, b = traveler.y - target.y, c = Math.sqrt(a * a + b * b);
+    return 2 * getDistance(traveler, target);
+}
+function getDistance(object1, object2) {
+    const a = object1.x - object2.x, b = object1.y - object2.y;
+    return Math.sqrt(a * a + b * b);
+}
+
 // CONCATENATED MODULE: ./app/classes/Ship.ts
 
 
@@ -1485,7 +1488,7 @@ class Ship_Ship {
     moveToGate() {
         this.animation = this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, function (object) {
             this.onAnimationUpdate(object);
-            if (App_App.shipsTooClose(this)) {
+            if (shipsTooClose(this)) {
                 Messenger.message("ship::queueHasMoved", this);
                 this.subscribe("ship::queueHasMoved");
                 this.animation.pause();
@@ -1501,7 +1504,7 @@ class Ship_Ship {
     handleMessage(eventType, target) {
         switch (eventType) {
             case "ship::queueHasMoved":
-                if (this.animation.isPaused() && !App_App.shipsTooClose(this)) {
+                if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
                     this.unsubscribe("ship::queueHasMoved");
                     Messenger.message("ship::queueHasMoved", this);
@@ -1594,7 +1597,6 @@ Ship_Ship.quantity = 0;
 
 
 
-
 const App_TWEEN = __webpack_require__(0).default;
 Object.assign(window, { TWEEN: App_TWEEN });
 class App_App {
@@ -1607,17 +1609,6 @@ class App_App {
         setTimeout(this.createShip.bind(this, "red"), 2000);
         App_App.app.ticker.add(() => {
         });
-    }
-    static shipsTooClose(currentShip) {
-        for (let ship of App_App.ships) {
-            if (ship.id !== currentShip.id
-                && ship.type === currentShip.type
-                && ship.x < currentShip.x
-                && getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE) {
-                return true;
-            }
-        }
-        return false;
     }
     createShip(type) {
         if (Ship_Ship.quantity > 40)

@@ -2,10 +2,9 @@ import {Harbor} from './Harbor';
 import {Dock} from './Dock';
 import {Messenger} from './Messenger';
 import {IShip} from '../interfaces/IShip';
-import {IShipTypes, IShipType} from '../interfaces/IShipTypes';
 import {shipTypes, config} from '../config/default';
 import {App} from '../App';
-import {getTravelTime, getDistance} from '../helper';
+import {getTravelTime, shipsTooClose} from '../helper';
 
 
 const TWEEN = require('@tweenjs/tween.js').default;
@@ -43,7 +42,7 @@ export class Ship implements IShip {
         this.moveToGate();
     }
 
-    protected makeGraphics() {
+    protected makeGraphics(): void {
         let graphics = new PIXI.Graphics();
         graphics.beginFill(this.loaded ? this.color : config.WATER_COLOR, 1);
         graphics.lineStyle(5, this.color, 1);
@@ -53,11 +52,11 @@ export class Ship implements IShip {
         this.graphics = App.stage.addChild(graphics);
     }
 
-    protected moveToGate() {
+    protected moveToGate(): void {
         this.animation = this.makeAnimation({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y},
             function (object) {
                 this.onAnimationUpdate(object);
-                if (App.shipsTooClose(this)) {
+                if (shipsTooClose(this)) {
                     Messenger.message("ship::queueHasMoved", this);
                     this.subscribe("ship::queueHasMoved");
                     this.animation.pause();
@@ -72,10 +71,10 @@ export class Ship implements IShip {
 
     }
 
-    public handleMessage(eventType: string, target: any) {
+    public handleMessage(eventType: string, target: any): void {
         switch (eventType) {
             case "ship::queueHasMoved":
-                if (this.animation.isPaused() && !App.shipsTooClose(this)) {
+                if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
                     this.unsubscribe("ship::queueHasMoved");
                     Messenger.message("ship::queueHasMoved", this);
@@ -90,7 +89,7 @@ export class Ship implements IShip {
         }
     }
 
-    protected moveToDock(target: Dock) {
+    protected moveToDock(target: Dock): void {
         this.animation = this.makeAnimation({y: Harbor.gateY, x: this.x});
         this.animation.chain(
             this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY})
@@ -113,7 +112,7 @@ export class Ship implements IShip {
         this.animation.start();
     }
 
-    protected moveToStart() {
+    protected moveToStart():void {
         this.animation = this.makeAnimation({y: Harbor.gateY, x: Harbor.gateX - Harbor.gateWidth * 2});
         this.animation.chain(this
             .makeAnimation({y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH})
@@ -132,7 +131,7 @@ export class Ship implements IShip {
             .onUpdate(customOnUpdate || this.onAnimationUpdate)
     }
 
-    protected onAnimationUpdate(object: Ship) {
+    protected onAnimationUpdate(object: Ship):void {
         object.graphics.x -= object.prevX - object.x;
         object.graphics.y -= object.prevY - object.y;
     }

@@ -1,15 +1,20 @@
+import {App} from "./App";
 import {Ship} from "./classes/Ship";
+import {config} from "./config/default";
 
-// export function shipsTooClose(currentShip: Ship): boolean {
-//     let filteredShips = ships.filter(
-//         ship => ship.id !== currentShip.id
-//             && ship.type === currentShip.type
-//             && ship.x < currentShip.x
-//     );
-//     let _ships = filteredShips
-//         .filter(ship => getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE);
-//     return Boolean(_ships.length);
-// }
+export function shipsTooClose(currentShip: Ship): boolean {
+    for (let ship of App.ships) {
+        if (
+            ship.id !== currentShip.id
+            && ship.type === currentShip.type
+            && ship.x < currentShip.x
+            && getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
 
 export function getTravelTime(traveler: { x: number, y: number }, target: { x: number, y: number }): number {
     const a = traveler.x - target.x,
