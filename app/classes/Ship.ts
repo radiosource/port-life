@@ -59,6 +59,8 @@ export class Ship implements IShip {
             function (object) {
                 this.onAnimationUpdate(object);
                 if (shipsTooClose(this)) {
+                    message("ship::queueHasMoved", this);
+                    this.subscribe("ship::queueHasMoved");
                     this.animation.pause();
                 }
             }.bind(this))
@@ -74,11 +76,16 @@ export class Ship implements IShip {
     public handleMessage(eventType: string, target: any) {
         switch (eventType) {
             case "ship::queueHasMoved":
+                if (this.animation.isPaused() && !shipsTooClose(this)) {
+                    this.animation.isPaused() && this.animation.resume();
+                    this.unsubscribe("ship::queueHasMoved");
+                    message("ship::queueHasMoved", this);
+                }
                 //this.unsubscribe("ship::queueHasMoved");
-                this.animation.isPaused() && this.animation.resume();
+
                 break;
             case "dock::moveToDock":
-                if(target.loaded!==this.loaded){
+                if (target.loaded !== this.loaded) {
                     this.unsubscribe("dock::moveToDock");
                     this.moveToDock(target);
                 }

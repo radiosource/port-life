@@ -1428,12 +1428,9 @@ class Ship_Ship {
         this.subscribe("ship::queueHasMoved");
         this.animation = this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, function (object) {
             this.onAnimationUpdate(object);
-            let _ships = shipsTooClose(this);
-            if (_ships.length) {
-                console.log("shipsTooClose! for " + this.id);
-                console.log(this);
-                console.log(_ships[0].animation.isPaused());
-                console.log(getDistance(this, _ships[0]));
+            if (shipsTooClose(this)) {
+                message("ship::queueHasMoved", this);
+                this.subscribe("ship::queueHasMoved");
                 this.animation.pause();
             }
         }.bind(this))
@@ -1447,8 +1444,12 @@ class Ship_Ship {
     handleMessage(eventType, target) {
         switch (eventType) {
             case "ship::queueHasMoved":
+                if (this.animation.isPaused() && !shipsTooClose(this)) {
+                    this.animation.isPaused() && this.animation.resume();
+                    this.unsubscribe("ship::queueHasMoved");
+                    message("ship::queueHasMoved", this);
+                }
                 //this.unsubscribe("ship::queueHasMoved");
-                this.animation.isPaused() && this.animation.resume();
                 break;
             case "dock::moveToDock":
                 if (target.loaded !== this.loaded) {
@@ -1596,7 +1597,7 @@ function shipsTooClose(currentShip) {
         && ship.x < currentShip.x);
     let _ships = filteredShips
         .filter(ship => getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE);
-    return _ships;
+    return Boolean(_ships.length);
 }
 function runApp() {
     Object.assign(window, { eventsListeners, createShip });
