@@ -16,9 +16,6 @@ export declare class Ship implements IShip {
     protected _y: number;
     protected _prevX: number;
     protected _prevY: number;
-    protected state: string;
-    /**@todo переписать на фабрику
-     */
     constructor(type: any);
     protected makeGraphics(): void;
     protected moveToGate(): void;

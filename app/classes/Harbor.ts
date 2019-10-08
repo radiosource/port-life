@@ -1,5 +1,5 @@
 import {config} from '../config/default';
-import {app, subscribe, unsubscribe, message} from "../app";
+import {app} from "../app";
 import {Dock} from "./Dock";
 import {Ship} from "./Ship";
 

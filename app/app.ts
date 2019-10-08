@@ -20,6 +20,15 @@ export const app = new PIXI.Application({
     //backgroundColor: config.WATER_COLOR
 });
 
+export function applyMixins(derivedCtor: any, baseCtors: any[]) {
+    baseCtors.forEach(baseCtor => {
+        Object.getOwnPropertyNames(baseCtor.prototype).forEach(name => {
+            Object.defineProperty(derivedCtor.prototype, name, Object.getOwnPropertyDescriptor(baseCtor.prototype, name));
+        });
+    });
+}
+
+
 export function getTravelTime(traveler: { x: number, y: number }, target: { x: number, y: number }): number {
     const a = traveler.x - target.x,
         b = traveler.y - target.y,
@@ -57,7 +66,6 @@ export function message(eventName: string, initiator: any, target?: any): boolea
     } else {
         for (let listener of eventsListeners[eventName].values()) {
             result = true;
-            eventName === 'ship::queueHasMoved' && console.log("queueHasMoved for " + listener.id);
             listener.handleMessage(eventName, initiator);
         }
     }
@@ -87,7 +95,8 @@ export function runApp(): void {
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
     createShip("green");
 
-    setTimeout(createShip.bind(null, "green"), 500);
+
+    setTimeout(createShip.bind(null, "red"), 2000);
 
     //setTimeout(createShip.bind(null, "green"), config.SHIP_CREATION_INTERVAL / 2 + 700);
     //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
@@ -127,11 +136,4 @@ export function runApp(): void {
     }
 
     animate();
-
-    function isFaced(a, b) {
-        var ab = a.getBounds();
-        var bb = b.getBounds();
-        return ab.x + ab.width > bb.x && ab.x < bb.x + bb.width && ab.y + ab.height > bb.y && ab.y < bb.y + bb.height;
-    }
-
-};
+}

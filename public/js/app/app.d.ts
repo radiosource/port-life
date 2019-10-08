@@ -1,6 +1,7 @@
 /// <reference types="pixi.js" />
 import { Ship } from "./classes/Ship";
 export declare const app: PIXI.Application;
+export declare function applyMixins(derivedCtor: any, baseCtors: any[]): void;
 export declare function getTravelTime(traveler: {
     x: number;
     y: number;

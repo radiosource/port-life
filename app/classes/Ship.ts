@@ -1,9 +1,10 @@
 import {Harbor} from './Harbor';
 import {Dock} from './Dock';
+import {Messenger} from './Messenger';
 import {IShip} from '../interfaces/IShip';
 import {IShipTypes, IShipType} from '../interfaces/IShipTypes';
 import {shipTypes, config} from '../config/default';
-import {app, shipsTooClose, subscribe, unsubscribe, message, getTravelTime, getDistance} from '../app';
+import {app, shipsTooClose, getTravelTime, getDistance, applyMixins} from '../app';
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
@@ -19,16 +20,13 @@ export class Ship implements IShip {
     readonly color: number;
 
     protected graphics: PIXI.Graphics;
-    protected animation;
+    protected animation: any;//TWEEN.Tween
     protected _loaded: boolean;
     protected _x: number;
     protected _y: number;
     protected _prevX: number;
     protected _prevY: number;
-    protected state: string;
 
-    /**@todo переписать на фабрику
-     */
     constructor(type) {
         if (!shipTypes[type]) {
             throw Error(`Invalid ship type - '${type}'`);
@@ -54,20 +52,19 @@ export class Ship implements IShip {
     }
 
     protected moveToGate() {
-        this.subscribe("ship::queueHasMoved");
         this.animation = this.makeAnimation({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y},
             function (object) {
                 this.onAnimationUpdate(object);
                 if (shipsTooClose(this)) {
-                    message("ship::queueHasMoved", this);
+                    Messenger.message("ship::queueHasMoved", this);
                     this.subscribe("ship::queueHasMoved");
                     this.animation.pause();
                 }
             }.bind(this))
             .onComplete(function () {
                 this.subscribe("dock::moveToDock");
-                message(`ship::arrivedAtTheGate`, this);
-                message(`ship::queueHasMoved`, this);
+                Messenger.message(`ship::arrivedAtTheGate`, this);
+                Messenger.message(`ship::queueHasMoved`, this);
             }.bind(this))
             .start()
 
@@ -79,10 +76,8 @@ export class Ship implements IShip {
                 if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
                     this.unsubscribe("ship::queueHasMoved");
-                    message("ship::queueHasMoved", this);
+                    Messenger.message("ship::queueHasMoved", this);
                 }
-                //this.unsubscribe("ship::queueHasMoved");
-
                 break;
             case "dock::moveToDock":
                 if (target.loaded !== this.loaded) {
@@ -94,18 +89,17 @@ export class Ship implements IShip {
     }
 
     protected moveToDock(target: Dock) {
-        message(`ship::queueHasMoved`, this);
         this.animation = this.makeAnimation({y: Harbor.gateY, x: this.x});
         this.animation.chain(
             this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY})
                 .chain(this
                     .makeAnimation(target.receivingPoints)
                     .onComplete(function () {
-                        message("ship::handleCargo", this, target);
+                        Messenger.message("ship::handleCargo", this, target);
                         this.animation = new TWEEN.Tween({})
                             .to({}, config.CARGO_HANDLING_TIME)
                             .onComplete(function (object) {
-                                message(`ship::queueHasMoved`, this);
+                                Messenger.message(`ship::queueHasMoved`, this);
                                 this.loaded = !this.loaded;
                                 this.makeGraphics();
                                 this.moveToStart();
@@ -142,11 +136,11 @@ export class Ship implements IShip {
     }
 
     protected subscribe(event: string): void {
-        subscribe(event, this);
+        Messenger.subscribe(event, this);
     }
 
     protected unsubscribe(event: string): void {
-        unsubscribe(event, this);
+        Messenger.unsubscribe(event, this);
     }
 
     get loaded(): boolean {

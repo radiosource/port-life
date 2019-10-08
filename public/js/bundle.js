@@ -1287,7 +1287,45 @@ const config = {
     SHIP_CREATION_INTERVAL: SECOND * 8,
 };
 
+// CONCATENATED MODULE: ./app/classes/Messenger.ts
+class Messenger {
+    static subscribe(eventName, subscriber) {
+        if (!(subscriber.handleMessage instanceof Function))
+            throw Error("subscribe::Invalid subscriber");
+        if (!Messenger.eventsListeners[eventName])
+            Messenger.eventsListeners[eventName] = new Set();
+        Messenger.eventsListeners[eventName].add(subscriber);
+    }
+    static unsubscribe(eventName, subscriber) {
+        if (!Messenger.eventsListeners[eventName])
+            return;
+        Messenger.eventsListeners[eventName].delete(subscriber);
+    }
+    static message(eventName, initiator, target) {
+        let result = false;
+        if (!(Messenger.eventsListeners[eventName] instanceof Set))
+            return result;
+        if (target) {
+            if (!(target.handleMessage instanceof Function))
+                throw Error("message::Invalid target!");
+            if (Messenger.eventsListeners[eventName].has(target)) {
+                target.handleMessage(eventName, initiator);
+                result = true;
+            }
+        }
+        else {
+            for (let listener of Messenger.eventsListeners[eventName].values()) {
+                result = true;
+                listener.handleMessage(eventName, initiator);
+            }
+        }
+        return result;
+    }
+}
+Messenger.eventsListeners = {};
+
 // CONCATENATED MODULE: ./app/classes/Dock.ts
+
 
 
 const TWEEN = __webpack_require__(0).default;
@@ -1303,7 +1341,7 @@ class Dock_Dock {
         this.receivingPoints = { y: yStart + this.width / 2, x: this.width + 10 };
         this.makeGraphics();
         this.animation = new TWEEN.Tween(this);
-        subscribe(`ship::arrivedAtTheGate`, this);
+        Messenger.subscribe(`ship::arrivedAtTheGate`, this);
     }
     get loaded() {
         return this._loaded;
@@ -1324,24 +1362,24 @@ class Dock_Dock {
         switch (eventType) {
             case `ship::arrivedAtTheGate`:
                 if (this.loaded !== target.loaded) {
-                    if (message("dock::moveToDock", this, target)) {
-                        unsubscribe("ship::arrivedAtTheGate", this);
-                        subscribe("ship::handleCargo", this);
+                    if (Messenger.message("dock::moveToDock", this, target)) {
+                        Messenger.unsubscribe("ship::arrivedAtTheGate", this);
+                        Messenger.subscribe("ship::handleCargo", this);
                     }
                 }
                 break;
             case "ship::handleCargo":
-                unsubscribe("ship::handleCargo", this);
+                Messenger.unsubscribe("ship::handleCargo", this);
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
                     .onComplete(function (object) {
                     this.loaded = !this.loaded;
                     this.makeGraphics();
-                    if (message(`dock::moveToDock`, this)) {
-                        subscribe(`ship::handleCargo`, this);
+                    if (Messenger.message(`dock::moveToDock`, this)) {
+                        Messenger.subscribe(`ship::handleCargo`, this);
                     }
                     else {
-                        subscribe(`ship::arrivedAtTheGate`, this);
+                        Messenger.subscribe(`ship::arrivedAtTheGate`, this);
                     }
                 }.bind(this))
                     .start();
@@ -1396,10 +1434,9 @@ Harbor_Harbor.gateWidth = config.SHIP_WIDTH / 3;
 
 
 
+
 const Ship_TWEEN = __webpack_require__(0).default;
 class Ship_Ship {
-    /**@todo переписать на фабрику
-     */
     constructor(type) {
         this.width = config.SHIP_WIDTH;
         this.height = config.SHIP_HEIGHT;
@@ -1425,19 +1462,18 @@ class Ship_Ship {
         this.graphics = app.stage.addChild(graphics);
     }
     moveToGate() {
-        this.subscribe("ship::queueHasMoved");
         this.animation = this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, function (object) {
             this.onAnimationUpdate(object);
             if (shipsTooClose(this)) {
-                message("ship::queueHasMoved", this);
+                Messenger.message("ship::queueHasMoved", this);
                 this.subscribe("ship::queueHasMoved");
                 this.animation.pause();
             }
         }.bind(this))
             .onComplete(function () {
             this.subscribe("dock::moveToDock");
-            message(`ship::arrivedAtTheGate`, this);
-            message(`ship::queueHasMoved`, this);
+            Messenger.message(`ship::arrivedAtTheGate`, this);
+            Messenger.message(`ship::queueHasMoved`, this);
         }.bind(this))
             .start();
     }
@@ -1447,9 +1483,8 @@ class Ship_Ship {
                 if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
                     this.unsubscribe("ship::queueHasMoved");
-                    message("ship::queueHasMoved", this);
+                    Messenger.message("ship::queueHasMoved", this);
                 }
-                //this.unsubscribe("ship::queueHasMoved");
                 break;
             case "dock::moveToDock":
                 if (target.loaded !== this.loaded) {
@@ -1460,17 +1495,16 @@ class Ship_Ship {
         }
     }
     moveToDock(target) {
-        message(`ship::queueHasMoved`, this);
         this.animation = this.makeAnimation({ y: Harbor_Harbor.gateY, x: this.x });
         this.animation.chain(this.makeAnimation({ x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2, y: Harbor_Harbor.gateY })
             .chain(this
             .makeAnimation(target.receivingPoints)
             .onComplete(function () {
-            message("ship::handleCargo", this, target);
+            Messenger.message("ship::handleCargo", this, target);
             this.animation = new Ship_TWEEN.Tween({})
                 .to({}, config.CARGO_HANDLING_TIME)
                 .onComplete(function (object) {
-                message(`ship::queueHasMoved`, this);
+                Messenger.message(`ship::queueHasMoved`, this);
                 this.loaded = !this.loaded;
                 this.makeGraphics();
                 this.moveToStart();
@@ -1500,10 +1534,10 @@ class Ship_Ship {
         object.graphics.y -= object.prevY - object.y;
     }
     subscribe(event) {
-        subscribe(event, this);
+        Messenger.subscribe(event, this);
     }
     unsubscribe(event) {
-        unsubscribe(event, this);
+        Messenger.unsubscribe(event, this);
     }
     get loaded() {
         return this._loaded;
@@ -1550,6 +1584,13 @@ const app = new PIXI.Application({
     height: config.WINDOW_HEIGHT,
     backgroundColor: 0xFFFFFF,
 });
+function applyMixins(derivedCtor, baseCtors) {
+    baseCtors.forEach(baseCtor => {
+        Object.getOwnPropertyNames(baseCtor.prototype).forEach(name => {
+            Object.defineProperty(derivedCtor.prototype, name, Object.getOwnPropertyDescriptor(baseCtor.prototype, name));
+        });
+    });
+}
 function getTravelTime(traveler, target) {
     const a = traveler.x - target.x, b = traveler.y - target.y, c = Math.sqrt(a * a + b * b);
     return 2 * getDistance(traveler, target);
@@ -1585,7 +1626,6 @@ function message(eventName, initiator, target) {
     else {
         for (let listener of eventsListeners[eventName].values()) {
             result = true;
-            eventName === 'ship::queueHasMoved' && console.log("queueHasMoved for " + listener.id);
             listener.handleMessage(eventName, initiator);
         }
     }
@@ -1605,7 +1645,7 @@ function runApp() {
     //setTimeout(createShip, 1000);
     //setTimeout(() => ships.forEach(a => a.animation.stop()), 5300);
     createShip("green");
-    setTimeout(createShip.bind(null, "green"), 500);
+    setTimeout(createShip.bind(null, "red"), 2000);
     //setTimeout(createShip.bind(null, "green"), config.SHIP_CREATION_INTERVAL / 2 + 700);
     //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
     //setTimeout(createShip.bind(null, "red"), config.SHIP_CREATION_INTERVAL / 2);
@@ -1636,13 +1676,7 @@ function runApp() {
         app_TWEEN.update();
     }
     animate();
-    function isFaced(a, b) {
-        var ab = a.getBounds();
-        var bb = b.getBounds();
-        return ab.x + ab.width > bb.x && ab.x < bb.x + bb.width && ab.y + ab.height > bb.y && ab.y < bb.y + bb.height;
-    }
 }
-;
 
 // CONCATENATED MODULE: ./index.ts
 

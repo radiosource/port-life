@@ -1,7 +1,8 @@
 import {config, shipTypes} from '../config/default';
 import {Harbor} from "./Harbor";
+import {Messenger} from "./Messenger";
 import {Ship} from "./Ship";
-import {app, subscribe, unsubscribe, message} from "../app";
+import {app} from "../app";
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
@@ -27,7 +28,7 @@ export class Dock {
         this.makeGraphics();
 
         this.animation = new TWEEN.Tween(this);
-        subscribe(`ship::arrivedAtTheGate`, this);
+        Messenger.subscribe(`ship::arrivedAtTheGate`, this);
     }
 
     get loaded() {
@@ -54,25 +55,25 @@ export class Dock {
 
             case `ship::arrivedAtTheGate` :
                 if (this.loaded !== target.loaded) {
-                    if (message("dock::moveToDock", this, target)) {
-                        unsubscribe("ship::arrivedAtTheGate", this);
-                        subscribe("ship::handleCargo", this);
+                    if (Messenger.message("dock::moveToDock", this, target)) {
+                        Messenger.unsubscribe("ship::arrivedAtTheGate", this);
+                        Messenger.subscribe("ship::handleCargo", this);
                     }
                 }
                 break;
 
 
             case "ship::handleCargo" :
-                unsubscribe("ship::handleCargo", this);
+                Messenger.unsubscribe("ship::handleCargo", this);
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
                     .onComplete(function (object) {
                         this.loaded = !this.loaded;
                         this.makeGraphics();
-                        if(message(`dock::moveToDock`, this)){
-                            subscribe(`ship::handleCargo`, this);
+                        if(Messenger.message(`dock::moveToDock`, this)){
+                            Messenger.subscribe(`ship::handleCargo`, this);
                         }else{
-                            subscribe(`ship::arrivedAtTheGate`, this);
+                            Messenger.subscribe(`ship::arrivedAtTheGate`, this);
                         }
                     }.bind(this))
                     .start()

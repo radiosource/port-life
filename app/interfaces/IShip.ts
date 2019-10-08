@@ -1,4 +1,4 @@
-export interface IShip {
+export interface IShip{
 
     readonly id: number;
     readonly width: number;
@@ -12,5 +12,4 @@ export interface IShip {
     prevX: number;
     prevY: number;
 
-    handleMessage(eventType: string, target: any): void;
 }

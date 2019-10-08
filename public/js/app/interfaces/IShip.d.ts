@@ -9,5 +9,4 @@ export interface IShip {
     y: number;
     prevX: number;
     prevY: number;
-    handleMessage(eventType: string, target: any): void;
 }
