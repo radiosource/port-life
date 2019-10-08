@@ -4,7 +4,9 @@ import {Messenger} from './Messenger';
 import {IShip} from '../interfaces/IShip';
 import {IShipTypes, IShipType} from '../interfaces/IShipTypes';
 import {shipTypes, config} from '../config/default';
-import {app, shipsTooClose, getTravelTime, getDistance, applyMixins} from '../app';
+import {app, shipsTooClose} from '../app';
+import {getTravelTime, getDistance} from '../helper';
+
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
