@@ -1676,19 +1676,20 @@ class Harbor_Harbor {
     message(event, target) {
     }
     handleMessage(eventType, target) {
-        //console.log("handleMessage", eventType);
-        // switch (eventType) {
-        //     case("ship::arrivedAtTheGate"):
-        //         const suitableDocks = this.docs.filter((dock: Dock) => dock.loaded !== target.loaded && !dock.busy);
-        //         if (suitableDocks.length) {
-        //             suitableDocks[0].busy = true;
-        //             target.handleMessage("harbor::moveToDock", suitableDocks[0]);
-        //         }
-        //         break;
-        // }
+        switch (eventType) {
+            case "ship::enter":
+                Harbor_Harbor.gateIsOpen = false; //!Harbor.gateIsOpen;
+                this.message("harbor:gateClosed");
+                break;
+            case "ship::exit":
+                Harbor_Harbor.gateIsOpen = true; //!Harbor.gateIsOpen;
+                this.message("harbor:gateOpen");
+                break;
+        }
     }
 }
 Harbor_Harbor.quantity = 0;
+Harbor_Harbor.gateIsOpen = false;
 Harbor_Harbor.gateX = config.WINDOW_WIDTH / 3;
 Harbor_Harbor.gateY = config.WINDOW_HEIGHT / 2;
 Harbor_Harbor.gateWidth = config.SHIP_WIDTH / 3;
@@ -1769,11 +1770,11 @@ class Ship_Ship {
                 this.animation.pause();
             }
         }.bind(this))
-            .onComplete(function () {
+            .onComplete(() => {
             this.subscribe("dock::moveToDock");
             this.message(`ship::arrivedAtTheGate`);
             this.message(`ship::queueHasMoved`);
-        }.bind(this))
+        })
             .start();
     }
     handleMessage(eventType, target) {
@@ -1794,32 +1795,34 @@ class Ship_Ship {
         }
     }
     moveToDock(target) {
-        this.animation = this.makeAnimation({ y: Harbor_Harbor.gateY, x: this.x });
+        this.animation = this
+            .makeAnimation({ y: Harbor_Harbor.gateY, x: this.x })
+            .onComplete(() => this.message("ship::queueHasMoved"));
         this.animation.chain(this.makeAnimation({ x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2, y: Harbor_Harbor.gateY })
             .chain(this
             .makeAnimation(target.receivingPoints)
-            .onComplete(function () {
-            this.message("ship::queueHasMoved");
+            .onComplete(() => {
             this.message("ship::handleCargo", target);
             this.animation = new Ship_TWEEN.Tween({})
                 .to({}, config.CARGO_HANDLING_TIME)
-                .onComplete(function (object) {
-                this.message(`ship::queueHasMoved`);
+                .onComplete((object) => {
                 this.loaded = !this.loaded;
                 this.makeGraphics();
                 this.moveToStart();
-            }.bind(this))
+            })
                 .start();
-        }.bind(this))));
+        })));
         this.animation.start();
     }
     moveToStart() {
-        this.animation = this.makeAnimation({ y: Harbor_Harbor.gateY, x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2 });
+        this.animation = this
+            .makeAnimation({ y: Harbor_Harbor.gateY, x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2 })
+            .onComplete(() => this.message("ship::queueHasMoved"));
         this.animation.chain(this
             .makeAnimation({ y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH })
-            .onComplete(function () {
+            .onComplete(() => {
             this.graphics.destroy();
-        }.bind(this)));
+        }));
         this.animation.start();
     }
     makeAnimation(targetPosition, customOnUpdate) {
@@ -1940,6 +1943,7 @@ class App_App {
         Object.assign(window, {
             createShip: this.createShip,
             ships: App_App.ships,
+            start: () => this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL / 3),
             stop: () => Object(main["clearInterval"])(this.intervalId)
         });
         App_App.app.ticker.add(() => {

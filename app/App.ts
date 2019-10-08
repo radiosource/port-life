@@ -38,6 +38,7 @@ export class App {
         Object.assign(window, {
             createShip: this.createShip,
             ships: App.ships,
+            start: () => this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL / 3),
             stop: () => clearInterval(this.intervalId)
         });
 

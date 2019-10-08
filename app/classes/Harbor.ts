@@ -7,9 +7,9 @@ import {withMessages} from '../mixins/withMessages';
 const TWEEN = require('@tweenjs/tween.js').default;
 
 
-export class Harbor implements withMessages{
+export class Harbor implements withMessages {
     static quantity = 0;
-
+    static gateIsOpen = false;
     static readonly gateX: number = config.WINDOW_WIDTH / 3;
     static readonly gateY: number = config.WINDOW_HEIGHT / 2;
     static readonly gateWidth: number = config.SHIP_WIDTH / 3;
@@ -17,7 +17,6 @@ export class Harbor implements withMessages{
     docs: Dock[] = [];
     protected color: number = 0xd4af37;
     protected graphics: PIXI.Graphics;
-    protected animation: TWEEN.Tween;
 
     subscribe(event: string): void {
     }
@@ -41,19 +40,19 @@ export class Harbor implements withMessages{
         for (let x = 0; x < config.DOCKS_COUNT; x++) {
             this.docs.push(new Dock(config.WINDOW_HEIGHT / 4 * x))
         }
-        Object.assign(window,{docs:this.docs})
+        Object.assign(window, {docs: this.docs})
     }
 
     public handleMessage(eventType: string, target: Ship) {
-        //console.log("handleMessage", eventType);
-        // switch (eventType) {
-        //     case("ship::arrivedAtTheGate"):
-        //         const suitableDocks = this.docs.filter((dock: Dock) => dock.loaded !== target.loaded && !dock.busy);
-        //         if (suitableDocks.length) {
-        //             suitableDocks[0].busy = true;
-        //             target.handleMessage("harbor::moveToDock", suitableDocks[0]);
-        //         }
-        //         break;
-        // }
+        switch (eventType) {
+            case "ship::enter":
+                Harbor.gateIsOpen = false;//!Harbor.gateIsOpen;
+                this.message("harbor:gateClosed");
+                break;
+            case "ship::exit":
+                Harbor.gateIsOpen = true;//!Harbor.gateIsOpen;
+                this.message("harbor:gateOpen");
+                break;
+        }
     }
 }

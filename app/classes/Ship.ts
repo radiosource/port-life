@@ -71,11 +71,11 @@ export class Ship implements withMessages, IShip {
                     this.animation.pause();
                 }
             }.bind(this))
-            .onComplete(function () {
+            .onComplete(() => {
                 this.subscribe("dock::moveToDock");
                 this.message(`ship::arrivedAtTheGate`);
                 this.message(`ship::queueHasMoved`);
-            }.bind(this))
+            })
             .start()
 
     }
@@ -99,36 +99,38 @@ export class Ship implements withMessages, IShip {
     }
 
     protected moveToDock(target: Dock): void {
-        this.animation = this.makeAnimation({y: Harbor.gateY, x: this.x});
+        this.animation = this
+            .makeAnimation({y: Harbor.gateY, x: this.x})
+            .onComplete(() => this.message("ship::queueHasMoved"));
         this.animation.chain(
             this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY})
                 .chain(this
                     .makeAnimation(target.receivingPoints)
-                    .onComplete(function () {
-                        this.message("ship::queueHasMoved");
+                    .onComplete(() => {
                         this.message("ship::handleCargo", target);
                         this.animation = new TWEEN.Tween({})
                             .to({}, config.CARGO_HANDLING_TIME)
-                            .onComplete(function (object) {
-                                this.message(`ship::queueHasMoved`);
+                            .onComplete((object) => {
                                 this.loaded = !this.loaded;
                                 this.makeGraphics();
                                 this.moveToStart();
-                            }.bind(this))
+                            })
                             .start()
-                    }.bind(this))
+                    })
                 )
         );
         this.animation.start();
     }
 
     protected moveToStart(): void {
-        this.animation = this.makeAnimation({y: Harbor.gateY, x: Harbor.gateX - Harbor.gateWidth * 2});
+        this.animation = this
+            .makeAnimation({y: Harbor.gateY, x: Harbor.gateX - Harbor.gateWidth * 2})
+            .onComplete(() => this.message("ship::queueHasMoved"));
         this.animation.chain(this
             .makeAnimation({y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH})
-            .onComplete(function () {
+            .onComplete(() => {
                 this.graphics.destroy();
-            }.bind(this))
+            })
         );
         this.animation.start();
     }
