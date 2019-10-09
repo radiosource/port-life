@@ -4,7 +4,7 @@ import {Harbor} from "./classes/Harbor";
 import {Dock} from "./classes/Dock";
 import {shipTypes} from './config/default';
 import {withMessages} from './mixins/withMessages';
-import {clearInterval} from "timers";
+import {IWithMessages} from './interfaces/IWithMessages';
 import {applyMixins} from './helper';
 
 applyMixins(Ship, [withMessages]);
@@ -14,9 +14,14 @@ applyMixins(Harbor, [withMessages]);
 const TWEEN = require('@tweenjs/tween.js').default;
 
 
-export class App {
-    intervalId;
+export class App implements withMessages, IWithMessages {
     readonly harbor: Harbor;
+
+    //Неуверен что сделал правильно, когда обьявил корабли и приложение статическими свойствами,
+    //нужен был доступ к кораблям в хелпере
+    //возможно лучше их заекспортить каким либо другим образом,
+    // или обрабатывать взаимодействие здесь а не в хелпере,
+    // или выносить таке вещи в какое то подобие стореджа
     static ships: Set<Ship> = new Set();
     static app = new PIXI.Application({
         width: config.WINDOW_WIDTH,
@@ -25,17 +30,37 @@ export class App {
     });
     static stage = App.app.stage;
 
+    subscribe(event: string): void {
+    }
+
+    unsubscribe(event: string): void {
+    }
+
+    message(event: string, target?: any): void {
+    }
+
+    public handleMessage(eventType: string, target: any): void {
+        switch (eventType) {
+            case "ship:destroyed" :
+                App.ships.delete(target);
+                break;
+        }
+    }
+
     constructor() {
         document.body.appendChild(App.app.view);
         this.animate();
 
         this.harbor = new Harbor();
+        this.subscribe("ship:destroyed");
         this.createShip();
-        this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL);
+        setInterval(this.createShip, config.SHIP_CREATION_INTERVAL);
 
+        //Только для воспроизвидений разных ситуаций в процесе разработки
         // Object.assign(window, {
         //     createShip: this.createShip,
-        //     ships: App.ships
+        //     ships: App.ships,
+        //     start: () => setInterval(this.createShip, config.SHIP_CREATION_INTERVAL)
         // });
     }
 

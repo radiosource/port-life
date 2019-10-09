@@ -9,4 +9,5 @@ export interface IConfig {
     readonly SHIP_CREATION_INTERVAL: number;
     readonly WINDOW_WIDTH: number;
     readonly WINDOW_HEIGHT: number;
+    readonly TRAVEL_TIME_RATE: number;
 }

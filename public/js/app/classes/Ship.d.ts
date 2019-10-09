@@ -18,6 +18,7 @@ export declare class Ship implements withMessages, IShip, IWithMessages {
     protected _y: number;
     protected _prevX: number;
     protected _prevY: number;
+    protected GATE_Y_CORRECTION: number;
     subscribe(event: string): void;
     unsubscribe(event: string): void;
     message(event: string, target?: any): void;

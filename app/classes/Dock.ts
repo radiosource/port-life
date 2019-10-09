@@ -64,7 +64,6 @@ export class Dock implements IDock, withMessages, IWithMessages {
 
             case `ship::arrivedAtTheGate` :
                 if (this.loaded !== target.loaded) {
-                    //this.unsubscribe(`ship::arrivedAtTheGate`);
                     this.subscribe("ship::moveToDockAccepted");
                     this.message(`dock::moveToDock`, target);
                 }

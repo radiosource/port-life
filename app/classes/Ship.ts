@@ -22,12 +22,14 @@ export class Ship implements withMessages, IShip, IWithMessages {
     readonly color: number;
 
     protected graphics: PIXI.Graphics;
-    protected animation: any;//TWEEN.Tween
+    protected animation: any;//если указаь тип TWEEN.Tween, ругается на вызов методов прототипа, не нашел как побороть
     protected _loaded: boolean;
     protected _x: number;
     protected _y: number;
     protected _prevX: number;
     protected _prevY: number;
+
+    protected GATE_Y_CORRECTION: number;
 
     subscribe(event: string): void {
     }
@@ -43,12 +45,16 @@ export class Ship implements withMessages, IShip, IWithMessages {
             throw Error(`Invalid ship type - '${type}'`);
         }
         Ship.quantity++;
+        this.type = type;
         this.id = Ship.quantity;
         this._x = shipTypes[type].START_POINTS.X;
         this._y = shipTypes[type].START_POINTS.Y;
-        Object.assign(this, shipTypes[type], {type});
+        this.GATE_Y_CORRECTION = (this.type === "green" ? this.height : -this.height) * 2;
+
+        //уже понял, что динамическое добавление свойств в обьект в TypeScript - что плохая идея
+        Object.assign(this, shipTypes[type]);
+
         this.makeGraphics();
-        //this.animation = new TWEEN.Tween(this);
         this.moveToGate();
     }
 
@@ -64,14 +70,14 @@ export class Ship implements withMessages, IShip, IWithMessages {
 
     protected moveToGate(): void {
         this.animation = this.makeAnimation({x: Harbor.gateX + config.SAFE_DISTANCE, y: this.y},
-            function (object) {
+            (object) => {
                 this.onAnimationUpdate(object);
                 if (shipsTooClose(this)) {
                     this.message("ship::queueHasMoved");
                     this.subscribe("ship::queueHasMoved");
                     this.animation.pause();
                 }
-            }.bind(this))
+            })
             .onComplete(() => {
                 this.subscribe("dock::moveToDock");
                 this.message(`ship::arrivedAtTheGate`);
@@ -107,13 +113,13 @@ export class Ship implements withMessages, IShip, IWithMessages {
 
     protected moveToDock(target: Dock): void {
         this.animation = this
-            .makeAnimation({y: Harbor.gateY, x: this.x})
+            .makeAnimation({y: Harbor.gateY - this.GATE_Y_CORRECTION, x: this.x})
             .onComplete(() => {
                 this.message("ship::queueHasMoved");
                 this.message("ship::exit");
             });
         this.animation.chain(
-            this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY})
+            this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY - this.GATE_Y_CORRECTION})
                 .chain(this
                     .makeAnimation(target.receivingPoints)
                     .onComplete(() => {
@@ -134,13 +140,21 @@ export class Ship implements withMessages, IShip, IWithMessages {
 
     protected moveToStart(): void {
         this.animation = this
-            .makeAnimation({y: Harbor.gateY, x: Harbor.gateX - Harbor.gateWidth * 2});
+            .makeAnimation({
+                y: Harbor.gateY - this.GATE_Y_CORRECTION,
+                x: Harbor.gateX - Harbor.gateWidth * 2
+            });
         this.animation.chain(this
-            .makeAnimation({y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH})
+            .makeAnimation({
+                y: config.WINDOW_HEIGHT/2,
+                x: config.WINDOW_WIDTH
+            })
             .onComplete(() => {
                 this.graphics.destroy();
+                this.message("ship:destroyed")
             })
-        );
+        )
+        ;
         this.animation.start();
     }
 
