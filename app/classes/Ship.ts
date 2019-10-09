@@ -6,7 +6,7 @@ import {IWithMessages} from '../interfaces/IWithMessages';
 import {shipTypes, config} from '../config/default';
 import {App} from '../App';
 import {getTravelTime, shipsTooClose} from '../helper';
-
+import * as PIXI from 'pixi.js'
 
 const TWEEN = require('@tweenjs/tween.js').default;
 

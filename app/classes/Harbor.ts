@@ -4,6 +4,7 @@ import {Dock} from "./Dock";
 import {Ship} from "./Ship";
 import {withMessages} from '../mixins/withMessages';
 import {IWithMessages} from '../interfaces/IWithMessages';
+import * as PIXI from 'pixi.js'
 
 export class Harbor implements withMessages, IWithMessages {
     static quantity: number = 0;

@@ -1,9 +1,9 @@
-/// <reference types="pixi.js" />
 /// <reference types="tween.js" />
 import { Dock } from './Dock';
 import { withMessages } from '../mixins/withMessages';
 import { IShip } from '../interfaces/IShip';
 import { IWithMessages } from '../interfaces/IWithMessages';
+import * as PIXI from 'pixi.js';
 export declare class Ship implements withMessages, IShip, IWithMessages {
     static quantity: number;
     readonly id: number;

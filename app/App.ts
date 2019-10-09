@@ -6,6 +6,7 @@ import {shipTypes} from './config/default';
 import {withMessages} from './mixins/withMessages';
 import {IWithMessages} from './interfaces/IWithMessages';
 import {applyMixins} from './helper';
+import * as PIXI from 'pixi.js'
 
 applyMixins(Ship, [withMessages]);
 applyMixins(Dock, [withMessages]);

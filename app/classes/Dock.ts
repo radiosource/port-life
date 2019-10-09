@@ -3,8 +3,10 @@ import {App} from "../App";
 import {withMessages} from "../mixins/withMessages";
 import {IDock} from '../interfaces/IDock';
 import {IWithMessages} from '../interfaces/IWithMessages';
+import * as PIXI from 'pixi.js'
 
 const TWEEN = require('@tweenjs/tween.js').default;
+
 
 export class Dock implements IDock, withMessages, IWithMessages {
     static quantity = 0;
