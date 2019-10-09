@@ -19,6 +19,13 @@ export declare class Ship implements withMessages, IShip, IWithMessages {
     protected _prevX: number;
     protected _prevY: number;
     protected GATE_Y_CORRECTION: number;
+    static readonly EXIT_MSG: string;
+    static readonly ENTER_MSG: string;
+    static readonly DESTROYED_MSG: string;
+    static readonly HANDLE_CARGO_MSG: string;
+    static readonly QUEUE_HAS_MOVED_MSG: string;
+    static readonly ARRIVED_AT_THE_GATE_MSG: string;
+    static readonly MOVE_TO_DOCK_ACCEPTED_MSG: string;
     subscribe(event: string): void;
     unsubscribe(event: string): void;
     message(event: string, target?: any): void;

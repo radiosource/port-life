@@ -17,6 +17,10 @@ export class Harbor implements withMessages, IWithMessages {
     protected readonly color: number = 0xd4af37;
     protected readonly graphics: PIXI.Graphics;
 
+    static readonly GATE_OPEN_MSG: string = "gateOpen";
+    static readonly GATE_CLOSED_MSG: string = "gateClosed";
+
+
     subscribe(event: string): void {
     }
 
@@ -40,19 +44,19 @@ export class Harbor implements withMessages, IWithMessages {
             this.docs.push(new Dock(config.WINDOW_HEIGHT / 4 * x))
         }
 
-        this.subscribe("ship::enter");
-        this.subscribe("ship::exit");
+        this.subscribe(Ship.EXIT_MSG);
+        this.subscribe(Ship.ENTER_MSG);
     }
 
     public handleMessage(eventType: string, target: Ship) {
         switch (eventType) {
-            case "ship::enter":
-                Harbor.gateIsOpen = false;//!Harbor.gateIsOpen;
-                this.message("harbor:gateClosed");
+            case Ship.ENTER_MSG:
+                Harbor.gateIsOpen = false;
+                this.message(Harbor.GATE_CLOSED_MSG);
                 break;
-            case "ship::exit":
-                Harbor.gateIsOpen = true;//!Harbor.gateIsOpen;
-                this.message("harbor:gateOpen");
+            case Ship.EXIT_MSG:
+                Harbor.gateIsOpen = true;
+                this.message(Harbor.GATE_OPEN_MSG);
                 break;
         }
     }

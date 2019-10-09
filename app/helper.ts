@@ -13,6 +13,7 @@ export function shipsTooClose(currentShip: Ship): boolean {
             ship.id !== currentShip.id
             && ship.type === currentShip.type
             && ship.x < currentShip.x
+            && ship.y === currentShip.y
             && getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE
         ) {
             return true;

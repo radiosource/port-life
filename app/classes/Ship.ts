@@ -31,6 +31,15 @@ export class Ship implements withMessages, IShip, IWithMessages {
 
     protected GATE_Y_CORRECTION: number;
 
+    static readonly EXIT_MSG: string = "exit";
+    static readonly ENTER_MSG: string = "enter";
+    static readonly DESTROYED_MSG: string = "destroyed";
+    static readonly HANDLE_CARGO_MSG: string = "handleCargo";
+    static readonly QUEUE_HAS_MOVED_MSG: string = "queueHasMoved";
+    static readonly ARRIVED_AT_THE_GATE_MSG: string = "arrivedAtTheGate";
+    static readonly MOVE_TO_DOCK_ACCEPTED_MSG: string = "moveToDockAccepted";
+
+
     subscribe(event: string): void {
     }
 
@@ -73,15 +82,15 @@ export class Ship implements withMessages, IShip, IWithMessages {
             (object) => {
                 this.onAnimationUpdate(object);
                 if (shipsTooClose(this)) {
-                    this.message("ship::queueHasMoved");
-                    this.subscribe("ship::queueHasMoved");
+                    this.message(Ship.QUEUE_HAS_MOVED_MSG);
+                    this.subscribe(Ship.QUEUE_HAS_MOVED_MSG);
                     this.animation.pause();
                 }
             })
             .onComplete(() => {
-                this.subscribe("dock::moveToDock");
-                this.message(`ship::arrivedAtTheGate`);
-                this.message(`ship::queueHasMoved`);
+                this.subscribe(Dock.MOVE_TO_DOCK_MSG);
+                this.message(Ship.ARRIVED_AT_THE_GATE_MSG);
+                this.message(Ship.QUEUE_HAS_MOVED_MSG);
             })
             .start()
 
@@ -89,24 +98,20 @@ export class Ship implements withMessages, IShip, IWithMessages {
 
     public handleMessage(eventType: string, target: any): void {
         switch (eventType) {
-            case "ship::queueHasMoved":
+            case Ship.QUEUE_HAS_MOVED_MSG:
                 if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
-                    this.unsubscribe("ship::queueHasMoved");
-                    this.message("ship::queueHasMoved");
+                    this.unsubscribe(Ship.QUEUE_HAS_MOVED_MSG);
+                    this.message(Ship.QUEUE_HAS_MOVED_MSG);
                 }
                 break;
-            case "dock::moveToDock":
+            case Dock.MOVE_TO_DOCK_MSG:
                 if (target.loaded !== this.loaded && Harbor.gateIsOpen) {
-                    this.unsubscribe("dock::moveToDock");
-                    this.message("ship::enter");
-                    this.message("ship::moveToDockAccepted", target);
+                    this.unsubscribe(Dock.MOVE_TO_DOCK_MSG);
+                    this.message(Ship.ENTER_MSG);
+                    this.message(Ship.MOVE_TO_DOCK_ACCEPTED_MSG, target);
                     this.moveToDock(target);
                 }
-                break;
-            case "harbor:gateClosed":
-                break;
-            case "harbor:gateOpen":
                 break;
         }
     }
@@ -115,15 +120,15 @@ export class Ship implements withMessages, IShip, IWithMessages {
         this.animation = this
             .makeAnimation({y: Harbor.gateY - this.GATE_Y_CORRECTION, x: this.x})
             .onComplete(() => {
-                this.message("ship::queueHasMoved");
-                this.message("ship::exit");
+                this.message(Ship.QUEUE_HAS_MOVED_MSG);
+                this.message(Ship.EXIT_MSG);
             });
         this.animation.chain(
             this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY - this.GATE_Y_CORRECTION})
                 .chain(this
                     .makeAnimation(target.receivingPoints)
                     .onComplete(() => {
-                        this.message("ship::handleCargo", target);
+                        this.message(Ship.HANDLE_CARGO_MSG, target);
                         this.animation = new TWEEN.Tween({})
                             .to({}, config.CARGO_HANDLING_TIME)
                             .onComplete((object) => {
@@ -146,12 +151,12 @@ export class Ship implements withMessages, IShip, IWithMessages {
             });
         this.animation.chain(this
             .makeAnimation({
-                y: config.WINDOW_HEIGHT/2,
+                y: config.WINDOW_HEIGHT / 2,
                 x: config.WINDOW_WIDTH
             })
             .onComplete(() => {
                 this.graphics.destroy();
-                this.message("ship:destroyed")
+                this.message(Ship.DESTROYED_MSG)
             })
         )
         ;

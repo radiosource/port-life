@@ -4946,9 +4946,9 @@ const config = {
     SAFE_DISTANCE: 20,
     WATER_COLOR: 0x4169e1,
     DOCKS_COUNT: 4,
-    TRAVEL_TIME_RATE: 5,
-    CARGO_HANDLING_TIME: SECOND * 5,
-    SHIP_CREATION_INTERVAL: SECOND * 8,
+    TRAVEL_TIME_RATE: 2,
+    CARGO_HANDLING_TIME: SECOND * 2,
+    SHIP_CREATION_INTERVAL: SECOND * 3,
 };
 
 // EXTERNAL MODULE: ./node_modules/@pixi/polyfill/lib/polyfill.es.js
@@ -45529,6 +45529,7 @@ var filters = {
 
 
 
+
 const TWEEN = __webpack_require__(4).default;
 class Dock_Dock {
     constructor(yStart) {
@@ -45542,7 +45543,7 @@ class Dock_Dock {
         this.receivingPoints = { y: yStart + this.width / 2, x: this.width + 10 };
         this.makeGraphics();
         this.animation = new TWEEN.Tween(this);
-        this.subscribe(`ship::arrivedAtTheGate`);
+        this.subscribe(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
     }
     subscribe(event) {
     }
@@ -45567,27 +45568,27 @@ class Dock_Dock {
     }
     handleMessage(eventType, target) {
         switch (eventType) {
-            case `ship::arrivedAtTheGate`:
+            case Ship_Ship.ARRIVED_AT_THE_GATE_MSG:
                 if (this.loaded !== target.loaded) {
-                    this.subscribe("ship::moveToDockAccepted");
-                    this.message(`dock::moveToDock`, target);
+                    this.subscribe(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
+                    this.message(Dock_Dock.MOVE_TO_DOCK_MSG, target);
                 }
                 break;
-            case "ship::moveToDockAccepted":
-                this.unsubscribe("ship::moveToDockAccepted");
-                this.unsubscribe(`ship::arrivedAtTheGate`);
-                this.subscribe(`ship::handleCargo`);
+            case Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG:
+                this.unsubscribe(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
+                this.unsubscribe(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
+                this.subscribe(Ship_Ship.HANDLE_CARGO_MSG);
                 break;
-            case "ship::handleCargo":
-                this.unsubscribe("ship::handleCargo");
+            case Ship_Ship.HANDLE_CARGO_MSG:
+                this.unsubscribe(Ship_Ship.HANDLE_CARGO_MSG);
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
                     .onComplete((object) => {
                     this.loaded = !this.loaded;
                     this.makeGraphics();
-                    this.subscribe("ship::moveToDockAccepted");
-                    this.subscribe(`ship::arrivedAtTheGate`);
-                    this.message(`dock::moveToDock`);
+                    this.subscribe(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
+                    this.subscribe(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
+                    this.message(Dock_Dock.MOVE_TO_DOCK_MSG);
                 })
                     .start();
                 break;
@@ -45595,8 +45596,10 @@ class Dock_Dock {
     }
 }
 Dock_Dock.quantity = 0;
+Dock_Dock.MOVE_TO_DOCK_MSG = "moveToDock";
 
 // CONCATENATED MODULE: ./app/classes/Harbor.ts
+
 
 
 
@@ -45617,8 +45620,8 @@ class Harbor_Harbor {
         for (let x = 0; x < config.DOCKS_COUNT; x++) {
             this.docs.push(new Dock_Dock(config.WINDOW_HEIGHT / 4 * x));
         }
-        this.subscribe("ship::enter");
-        this.subscribe("ship::exit");
+        this.subscribe(Ship_Ship.EXIT_MSG);
+        this.subscribe(Ship_Ship.ENTER_MSG);
     }
     subscribe(event) {
     }
@@ -45628,13 +45631,13 @@ class Harbor_Harbor {
     }
     handleMessage(eventType, target) {
         switch (eventType) {
-            case "ship::enter":
-                Harbor_Harbor.gateIsOpen = false; //!Harbor.gateIsOpen;
-                this.message("harbor:gateClosed");
+            case Ship_Ship.ENTER_MSG:
+                Harbor_Harbor.gateIsOpen = false;
+                this.message(Harbor_Harbor.GATE_CLOSED_MSG);
                 break;
-            case "ship::exit":
-                Harbor_Harbor.gateIsOpen = true; //!Harbor.gateIsOpen;
-                this.message("harbor:gateOpen");
+            case Ship_Ship.EXIT_MSG:
+                Harbor_Harbor.gateIsOpen = true;
+                this.message(Harbor_Harbor.GATE_OPEN_MSG);
                 break;
         }
     }
@@ -45644,6 +45647,8 @@ Harbor_Harbor.gateIsOpen = true;
 Harbor_Harbor.gateX = config.WINDOW_WIDTH / 3;
 Harbor_Harbor.gateY = config.WINDOW_HEIGHT / 2;
 Harbor_Harbor.gateWidth = config.SHIP_WIDTH / 3;
+Harbor_Harbor.GATE_OPEN_MSG = "gateOpen";
+Harbor_Harbor.GATE_CLOSED_MSG = "gateClosed";
 
 // CONCATENATED MODULE: ./app/helper.ts
 
@@ -45658,6 +45663,7 @@ function shipsTooClose(currentShip) {
         if (ship.id !== currentShip.id
             && ship.type === currentShip.type
             && ship.x < currentShip.x
+            && ship.y === currentShip.y
             && getDistance(currentShip, ship) < config.SHIP_WIDTH + config.SAFE_DISTANCE) {
             return true;
         }
@@ -45702,6 +45708,7 @@ function applyMixins(derivedCtor, baseCtors) {
 
 
 
+
 const Ship_TWEEN = __webpack_require__(4).default;
 class Ship_Ship {
     constructor(type) {
@@ -45740,38 +45747,34 @@ class Ship_Ship {
         this.animation = this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, (object) => {
             this.onAnimationUpdate(object);
             if (shipsTooClose(this)) {
-                this.message("ship::queueHasMoved");
-                this.subscribe("ship::queueHasMoved");
+                this.message(Ship_Ship.QUEUE_HAS_MOVED_MSG);
+                this.subscribe(Ship_Ship.QUEUE_HAS_MOVED_MSG);
                 this.animation.pause();
             }
         })
             .onComplete(() => {
-            this.subscribe("dock::moveToDock");
-            this.message(`ship::arrivedAtTheGate`);
-            this.message(`ship::queueHasMoved`);
+            this.subscribe(Dock_Dock.MOVE_TO_DOCK_MSG);
+            this.message(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
+            this.message(Ship_Ship.QUEUE_HAS_MOVED_MSG);
         })
             .start();
     }
     handleMessage(eventType, target) {
         switch (eventType) {
-            case "ship::queueHasMoved":
+            case Ship_Ship.QUEUE_HAS_MOVED_MSG:
                 if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
-                    this.unsubscribe("ship::queueHasMoved");
-                    this.message("ship::queueHasMoved");
+                    this.unsubscribe(Ship_Ship.QUEUE_HAS_MOVED_MSG);
+                    this.message(Ship_Ship.QUEUE_HAS_MOVED_MSG);
                 }
                 break;
-            case "dock::moveToDock":
+            case Dock_Dock.MOVE_TO_DOCK_MSG:
                 if (target.loaded !== this.loaded && Harbor_Harbor.gateIsOpen) {
-                    this.unsubscribe("dock::moveToDock");
-                    this.message("ship::enter");
-                    this.message("ship::moveToDockAccepted", target);
+                    this.unsubscribe(Dock_Dock.MOVE_TO_DOCK_MSG);
+                    this.message(Ship_Ship.ENTER_MSG);
+                    this.message(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG, target);
                     this.moveToDock(target);
                 }
-                break;
-            case "harbor:gateClosed":
-                break;
-            case "harbor:gateOpen":
                 break;
         }
     }
@@ -45779,14 +45782,14 @@ class Ship_Ship {
         this.animation = this
             .makeAnimation({ y: Harbor_Harbor.gateY - this.GATE_Y_CORRECTION, x: this.x })
             .onComplete(() => {
-            this.message("ship::queueHasMoved");
-            this.message("ship::exit");
+            this.message(Ship_Ship.QUEUE_HAS_MOVED_MSG);
+            this.message(Ship_Ship.EXIT_MSG);
         });
         this.animation.chain(this.makeAnimation({ x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2, y: Harbor_Harbor.gateY - this.GATE_Y_CORRECTION })
             .chain(this
             .makeAnimation(target.receivingPoints)
             .onComplete(() => {
-            this.message("ship::handleCargo", target);
+            this.message(Ship_Ship.HANDLE_CARGO_MSG, target);
             this.animation = new Ship_TWEEN.Tween({})
                 .to({}, config.CARGO_HANDLING_TIME)
                 .onComplete((object) => {
@@ -45811,7 +45814,7 @@ class Ship_Ship {
         })
             .onComplete(() => {
             this.graphics.destroy();
-            this.message("ship:destroyed");
+            this.message(Ship_Ship.DESTROYED_MSG);
         }));
         this.animation.start();
     }
@@ -45854,6 +45857,13 @@ class Ship_Ship {
     }
 }
 Ship_Ship.quantity = 0;
+Ship_Ship.EXIT_MSG = "exit";
+Ship_Ship.ENTER_MSG = "enter";
+Ship_Ship.DESTROYED_MSG = "destroyed";
+Ship_Ship.HANDLE_CARGO_MSG = "handleCargo";
+Ship_Ship.QUEUE_HAS_MOVED_MSG = "queueHasMoved";
+Ship_Ship.ARRIVED_AT_THE_GATE_MSG = "arrivedAtTheGate";
+Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG = "moveToDockAccepted";
 
 // CONCATENATED MODULE: ./app/classes/Messenger.ts
 //Наверно лучше подписоватся на события, указывая колбек,
@@ -45941,12 +45951,12 @@ class App_App {
         this.subscribe("ship:destroyed");
         this.createShip();
         setInterval(this.createShip, config.SHIP_CREATION_INTERVAL);
-        //Только для воспроизвидений разных ситуаций в процесе разработки
-        // Object.assign(window, {
-        //     createShip: this.createShip,
-        //     ships: App.ships,
-        //     start: () => setInterval(this.createShip, config.SHIP_CREATION_INTERVAL)
-        // });
+        //Только для воспроизведений разных ситуаций в процесе разработки
+        Object.assign(window, {
+            createShip: this.createShip,
+            ships: App_App.ships,
+            start: () => setInterval(this.createShip, config.SHIP_CREATION_INTERVAL)
+        });
     }
     subscribe(event) {
     }
