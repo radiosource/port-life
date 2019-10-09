@@ -1,4 +1,4 @@
-export interface IShip{
+export interface IShip {
 
     readonly id: number;
     readonly width: number;
@@ -11,5 +11,4 @@ export interface IShip{
     y: number;
     prevX: number;
     prevY: number;
-
 }

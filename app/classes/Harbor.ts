@@ -3,20 +3,18 @@ import {App} from "../App";
 import {Dock} from "./Dock";
 import {Ship} from "./Ship";
 import {withMessages} from '../mixins/withMessages';
+import {IWithMessages} from '../interfaces/IWithMessages';
 
-const TWEEN = require('@tweenjs/tween.js').default;
-
-
-export class Harbor implements withMessages {
-    static quantity = 0;
-    static gateIsOpen = true;
+export class Harbor implements withMessages, IWithMessages {
+    static quantity: number = 0;
+    static gateIsOpen: boolean = true;
     static readonly gateX: number = config.WINDOW_WIDTH / 3;
     static readonly gateY: number = config.WINDOW_HEIGHT / 2;
     static readonly gateWidth: number = config.SHIP_WIDTH / 3;
 
-    docs: Dock[] = [];
-    protected color: number = 0xd4af37;
-    protected graphics: PIXI.Graphics;
+    protected readonly docs: Dock[] = [];
+    protected readonly color: number = 0xd4af37;
+    protected readonly graphics: PIXI.Graphics;
 
     subscribe(event: string): void {
     }
@@ -40,7 +38,6 @@ export class Harbor implements withMessages {
         for (let x = 0; x < config.DOCKS_COUNT; x++) {
             this.docs.push(new Dock(config.WINDOW_HEIGHT / 4 * x))
         }
-        Object.assign(window, {docs: this.docs});
 
         this.subscribe("ship::enter");
         this.subscribe("ship::exit");

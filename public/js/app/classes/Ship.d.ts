@@ -3,7 +3,8 @@
 import { Dock } from './Dock';
 import { withMessages } from '../mixins/withMessages';
 import { IShip } from '../interfaces/IShip';
-export declare class Ship implements withMessages, IShip {
+import { IWithMessages } from '../interfaces/IWithMessages';
+export declare class Ship implements withMessages, IShip, IWithMessages {
     static quantity: number;
     readonly id: number;
     readonly width: number;

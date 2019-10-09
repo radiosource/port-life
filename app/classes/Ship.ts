@@ -2,6 +2,7 @@ import {Harbor} from './Harbor';
 import {Dock} from './Dock';
 import {withMessages} from '../mixins/withMessages';
 import {IShip} from '../interfaces/IShip';
+import {IWithMessages} from '../interfaces/IWithMessages';
 import {shipTypes, config} from '../config/default';
 import {App} from '../App';
 import {getTravelTime, shipsTooClose} from '../helper';
@@ -10,7 +11,7 @@ import {getTravelTime, shipsTooClose} from '../helper';
 const TWEEN = require('@tweenjs/tween.js').default;
 
 
-export class Ship implements withMessages, IShip {
+export class Ship implements withMessages, IShip, IWithMessages {
 
     static quantity = 0;
 
@@ -133,8 +134,7 @@ export class Ship implements withMessages, IShip {
 
     protected moveToStart(): void {
         this.animation = this
-            .makeAnimation({y: Harbor.gateY, x: Harbor.gateX - Harbor.gateWidth * 2})
-            .onComplete(() => this.message("ship::queueHasMoved"));
+            .makeAnimation({y: Harbor.gateY, x: Harbor.gateX - Harbor.gateWidth * 2});
         this.animation.chain(this
             .makeAnimation({y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH})
             .onComplete(() => {

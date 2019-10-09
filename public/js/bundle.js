@@ -1572,7 +1572,7 @@ const config = {
     SAFE_DISTANCE: 20,
     WATER_COLOR: 0x4169e1,
     DOCKS_COUNT: 4,
-    CARGO_HANDLING_TIME: SECOND * 1,
+    CARGO_HANDLING_TIME: SECOND * 5,
     SHIP_CREATION_INTERVAL: SECOND * 8,
 };
 
@@ -1584,8 +1584,8 @@ class Dock_Dock {
     constructor(yStart) {
         this.height = config.WINDOW_HEIGHT / 4 - 10;
         this.width = config.SHIP_HEIGHT;
-        this._loaded = false;
         this.color = 0xd4af37;
+        this._loaded = false;
         Dock_Dock.quantity++;
         this.id = Dock_Dock.quantity;
         this.yStart = yStart;
@@ -1651,7 +1651,6 @@ Dock_Dock.quantity = 0;
 
 
 
-const Harbor_TWEEN = __webpack_require__(0).default;
 class Harbor_Harbor {
     constructor() {
         this.docs = [];
@@ -1668,7 +1667,6 @@ class Harbor_Harbor {
         for (let x = 0; x < config.DOCKS_COUNT; x++) {
             this.docs.push(new Dock_Dock(config.WINDOW_HEIGHT / 4 * x));
         }
-        Object.assign(window, { docs: this.docs });
         this.subscribe("ship::enter");
         this.subscribe("ship::exit");
     }
@@ -1712,8 +1710,7 @@ function shipsTooClose(currentShip) {
     return false;
 }
 function getTravelTime(traveler, target) {
-    const a = traveler.x - target.x, b = traveler.y - target.y, c = Math.sqrt(a * a + b * b);
-    return 2 * getDistance(traveler, target);
+    return 5 * getDistance(traveler, target);
 }
 function getDistance(object1, object2) {
     const a = object1.x - object2.x, b = object1.y - object2.y;
@@ -1828,8 +1825,7 @@ class Ship_Ship {
     }
     moveToStart() {
         this.animation = this
-            .makeAnimation({ y: Harbor_Harbor.gateY, x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2 })
-            .onComplete(() => this.message("ship::queueHasMoved"));
+            .makeAnimation({ y: Harbor_Harbor.gateY, x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2 });
         this.animation.chain(this
             .makeAnimation({ y: config.WINDOW_HEIGHT / 2, x: config.WINDOW_WIDTH })
             .onComplete(() => {
@@ -1945,16 +1941,12 @@ class App_App {
         document.body.appendChild(App_App.app.view);
         this.animate();
         this.harbor = new Harbor_Harbor();
-        //this.createShip("green");
-        //setTimeout(this.createShip.bind(this, "red"), 2000);
-        //this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL / 3);
+        this.createShip();
+        this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL);
         Object.assign(window, {
             createShip: this.createShip,
             ships: App_App.ships,
-            start: () => this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL / 3),
             stop: () => Object(main["clearInterval"])(this.intervalId)
-        });
-        App_App.app.ticker.add(() => {
         });
     }
     createShip(type) {
@@ -1978,7 +1970,7 @@ App_App.ships = new Set();
 App_App.app = new PIXI.Application({
     width: config.WINDOW_WIDTH,
     height: config.WINDOW_HEIGHT,
-    backgroundColor: 0xFFFFFF,
+    backgroundColor: config.WATER_COLOR
 });
 App_App.stage = App_App.app.stage;
 

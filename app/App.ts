@@ -21,8 +21,7 @@ export class App {
     static app = new PIXI.Application({
         width: config.WINDOW_WIDTH,
         height: config.WINDOW_HEIGHT,
-        backgroundColor: 0xFFFFFF,
-        //backgroundColor: config.WATER_COLOR
+        backgroundColor: config.WATER_COLOR
     });
     static stage = App.app.stage;
 
@@ -31,20 +30,13 @@ export class App {
         this.animate();
 
         this.harbor = new Harbor();
-        //this.createShip("green");
-        //setTimeout(this.createShip.bind(this, "red"), 2000);
-        //this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL / 3);
+        this.createShip();
+        this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL);
 
-        Object.assign(window, {
-            createShip: this.createShip,
-            ships: App.ships,
-            start: () => this.intervalId = setInterval(this.createShip, config.SHIP_CREATION_INTERVAL / 3),
-            stop: () => clearInterval(this.intervalId)
-        });
-
-        App.app.ticker.add(() => {
-
-        });
+        // Object.assign(window, {
+        //     createShip: this.createShip,
+        //     ships: App.ships
+        // });
     }
 
     protected createShip(type?: string): void {

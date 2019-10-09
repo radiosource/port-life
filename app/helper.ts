@@ -17,11 +17,7 @@ export function shipsTooClose(currentShip: Ship): boolean {
 }
 
 export function getTravelTime(traveler: { x: number, y: number }, target: { x: number, y: number }): number {
-    const a = traveler.x - target.x,
-        b = traveler.y - target.y,
-        c = Math.sqrt(a * a + b * b);
-
-    return 2 * getDistance(traveler, target);
+    return 5 * getDistance(traveler, target);
 }
 
 export function getDistance(object1: { x: number, y: number }, object2: { x: number, y: number }): number {

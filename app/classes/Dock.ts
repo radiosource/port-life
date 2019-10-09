@@ -1,22 +1,24 @@
 import {config} from '../config/default';
 import {App} from "../App";
 import {withMessages} from "../mixins/withMessages";
+import {IDock} from '../interfaces/IDock';
+import {IWithMessages} from '../interfaces/IWithMessages';
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
-export class Dock implements withMessages {
+export class Dock implements IDock, withMessages, IWithMessages {
     static quantity = 0;
     readonly id: number;
 
     readonly receivingPoints: { x: number, y: number };
     readonly height: number = config.WINDOW_HEIGHT / 4 - 10;
     readonly width: number = config.SHIP_HEIGHT;
+    protected readonly color: number = 0xd4af37;
 
     protected _loaded: boolean = false;
-    protected color: number = 0xd4af37;
     protected graphics: PIXI.Graphics;
     protected animation: TWEEN.Tween;
-    yStart: number;
+    readonly yStart: number;
 
     subscribe(event: string): void {
     }
