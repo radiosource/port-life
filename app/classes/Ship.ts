@@ -7,11 +7,12 @@ import {shipTypes, config} from '../config/default';
 import {App} from '../App';
 import {getTravelTime, shipsTooClose} from '../helper';
 import * as PIXI from 'pixi.js'
+import {AdditionalShipData} from "./AdditionalShipData";
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
 
-export class Ship implements IShip, IWithMessages {
+export class Ship extends Message implements IShip, IWithMessages {
 
     static quantity = 0;
 
@@ -19,11 +20,9 @@ export class Ship implements IShip, IWithMessages {
     readonly width = config.SHIP_WIDTH;
     readonly height = config.SHIP_HEIGHT;
     readonly type: string;
-    readonly color: number;
 
     protected graphics: PIXI.Graphics;
     protected animation: any;//если указаь тип TWEEN.Tween, ругается на вызов методов прототипа, не нашел как побороть
-    protected _loaded: boolean;
     protected _x: number;
     protected _y: number;
     protected _prevX: number;
@@ -38,21 +37,21 @@ export class Ship implements IShip, IWithMessages {
     static readonly QUEUE_HAS_MOVED_MSG: string = "queueHasMoved";
     static readonly ARRIVED_AT_THE_GATE_MSG: string = "arrivedAtTheGate";
     static readonly MOVE_TO_DOCK_ACCEPTED_MSG: string = "moveToDockAccepted";
-    readonly message: Message = new Message(this);
+    protected additionalData: AdditionalShipData;
 
     constructor(type) {
+        super();
         if (!shipTypes[type]) {
             throw Error(`Invalid ship type - '${type}'`);
         }
         Ship.quantity++;
         this.type = type;
         this.id = Ship.quantity;
-        this._x = shipTypes[type].START_POINTS.X;
-        this._y = shipTypes[type].START_POINTS.Y;
-        this.GATE_Y_CORRECTION = (this.type === "green" ? this.height : -this.height) * 2;
 
-        //уже понял, что динамическое добавление свойств в обьект в TypeScript - что плохая идея
-        Object.assign(this, shipTypes[type]);
+        this.additionalData = new AdditionalShipData(this.type);
+        this._x = this.additionalData.START_POINTS.X;
+        this._y = this.additionalData.START_POINTS.Y;
+        this.GATE_Y_CORRECTION = (this.type === "green" ? this.height : -this.height) * 2;
 
         this.makeGraphics();
         this.moveToGate();
@@ -73,15 +72,15 @@ export class Ship implements IShip, IWithMessages {
             (object) => {
                 this.onAnimationUpdate(object);
                 if (shipsTooClose(this)) {
-                    this.message.send(Ship.QUEUE_HAS_MOVED_MSG);
-                    this.message.subscribe(Ship.QUEUE_HAS_MOVED_MSG);
+                    this.send(Ship.QUEUE_HAS_MOVED_MSG);
+                    this.subscribe(Ship.QUEUE_HAS_MOVED_MSG);
                     this.animation.pause();
                 }
             })
             .onComplete(() => {
-                this.message.subscribe(Dock.MOVE_TO_DOCK_MSG);
-                this.message.send(Ship.ARRIVED_AT_THE_GATE_MSG);
-                this.message.send(Ship.QUEUE_HAS_MOVED_MSG);
+                this.subscribe(Dock.MOVE_TO_DOCK_MSG);
+                this.send(Ship.ARRIVED_AT_THE_GATE_MSG);
+                this.send(Ship.QUEUE_HAS_MOVED_MSG);
             })
             .start()
 
@@ -92,15 +91,15 @@ export class Ship implements IShip, IWithMessages {
             case Ship.QUEUE_HAS_MOVED_MSG:
                 if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
-                    this.message.unsubscribe(Ship.QUEUE_HAS_MOVED_MSG);
-                    this.message.send(Ship.QUEUE_HAS_MOVED_MSG);
+                    this.unsubscribe(Ship.QUEUE_HAS_MOVED_MSG);
+                    this.send(Ship.QUEUE_HAS_MOVED_MSG);
                 }
                 break;
             case Dock.MOVE_TO_DOCK_MSG:
                 if (target.loaded !== this.loaded && Harbor.gateIsOpen) {
-                    this.message.unsubscribe(Dock.MOVE_TO_DOCK_MSG);
-                    this.message.send(Ship.ENTER_MSG);
-                    this.message.send(Ship.MOVE_TO_DOCK_ACCEPTED_MSG, target);
+                    this.unsubscribe(Dock.MOVE_TO_DOCK_MSG);
+                    this.send(Ship.ENTER_MSG);
+                    this.send(Ship.MOVE_TO_DOCK_ACCEPTED_MSG, target);
                     this.moveToDock(target);
                 }
                 break;
@@ -111,15 +110,15 @@ export class Ship implements IShip, IWithMessages {
         this.animation = this
             .makeAnimation({y: Harbor.gateY - this.GATE_Y_CORRECTION, x: this.x})
             .onComplete(() => {
-                this.message.send(Ship.QUEUE_HAS_MOVED_MSG);
-                this.message.send(Ship.EXIT_MSG);
+                this.send(Ship.QUEUE_HAS_MOVED_MSG);
+                this.send(Ship.EXIT_MSG);
             });
         this.animation.chain(
             this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY - this.GATE_Y_CORRECTION})
                 .chain(this
                     .makeAnimation(target.receivingPoints)
                     .onComplete(() => {
-                        this.message.send(Ship.HANDLE_CARGO_MSG, target);
+                        this.send(Ship.HANDLE_CARGO_MSG, target);
                         this.animation = new TWEEN.Tween({})
                             .to({}, config.CARGO_HANDLING_TIME)
                             .onComplete((object) => {
@@ -147,7 +146,7 @@ export class Ship implements IShip, IWithMessages {
             })
             .onComplete(() => {
                 this.graphics.destroy();
-                this.message.send(Ship.DESTROYED_MSG)
+                this.send(Ship.DESTROYED_MSG)
             })
         )
         ;
@@ -167,12 +166,17 @@ export class Ship implements IShip, IWithMessages {
         object.graphics.y -= object.prevY - object.y;
     }
 
+
+    get color(): number {
+        return this.additionalData.color;
+    }
+
     get loaded(): boolean {
-        return this._loaded;
+        return this.additionalData.loaded;
     }
 
     set loaded(loaded: boolean) {
-        this._loaded = loaded;
+        this.additionalData.loaded = loaded;
     }
 
     set x(x) {

@@ -4,16 +4,15 @@ import { Message } from "./Message";
 import { IShip } from '../interfaces/IShip';
 import { IWithMessages } from '../interfaces/IWithMessages';
 import * as PIXI from 'pixi.js';
-export declare class Ship implements IShip, IWithMessages {
+import { AdditionalShipData } from "./AdditionalShipData";
+export declare class Ship extends Message implements IShip, IWithMessages {
     static quantity: number;
     readonly id: number;
     readonly width: number;
     readonly height: number;
     readonly type: string;
-    readonly color: number;
     protected graphics: PIXI.Graphics;
     protected animation: any;
-    protected _loaded: boolean;
     protected _x: number;
     protected _y: number;
     protected _prevX: number;
@@ -26,7 +25,7 @@ export declare class Ship implements IShip, IWithMessages {
     static readonly QUEUE_HAS_MOVED_MSG: string;
     static readonly ARRIVED_AT_THE_GATE_MSG: string;
     static readonly MOVE_TO_DOCK_ACCEPTED_MSG: string;
-    readonly message: Message;
+    protected additionalData: AdditionalShipData;
     constructor(type: any);
     protected makeGraphics(): void;
     protected moveToGate(): void;
@@ -38,6 +37,7 @@ export declare class Ship implements IShip, IWithMessages {
         y: number;
     }, customOnUpdate?: Function): TWEEN.Tween;
     protected onAnimationUpdate(object: Ship): void;
+    readonly color: number;
     loaded: boolean;
     x: number;
     y: number;

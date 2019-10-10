@@ -10,7 +10,7 @@ import * as PIXI from 'pixi.js'
 const TWEEN = require('@tweenjs/tween.js').default;
 
 
-export class App implements IWithMessages {
+export class App extends Message implements IWithMessages {
     readonly harbor: Harbor;
 
     //Неуверен что сделал правильно, когда обьявил корабли и приложение статическими свойствами,
@@ -25,7 +25,6 @@ export class App implements IWithMessages {
         backgroundColor: config.WATER_COLOR
     });
     static stage = App.app.stage;
-    readonly message: Message = new Message(this);
 
     public handleMessage(eventType: string, target: any): void {
         switch (eventType) {
@@ -36,20 +35,21 @@ export class App implements IWithMessages {
     }
 
     constructor() {
+        super();
         document.body.appendChild(App.app.view);
         this.animate();
 
         this.harbor = new Harbor();
-        this.message.subscribe(Ship.DESTROYED_MSG);
+        this.subscribe(Ship.DESTROYED_MSG);
         this.createShip();
         setInterval(this.createShip, config.SHIP_CREATION_INTERVAL);
 
         //Только для воспроизведений разных ситуаций в процесе разработки
-        Object.assign(window, {
-            createShip: this.createShip,
-            ships: App.ships,
-            start: () => setInterval(this.createShip, config.SHIP_CREATION_INTERVAL)
-        });
+        // Object.assign(window, {
+        //     createShip: this.createShip,
+        //     ships: App.ships,
+        //     start: () => setInterval(this.createShip, config.SHIP_CREATION_INTERVAL)
+        // });
     }
 
     protected createShip(type?: string): void {

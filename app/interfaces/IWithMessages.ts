@@ -1,6 +1,6 @@
-import {Message} from '../classes/Message';
-
 export interface IWithMessages {
     handleMessage(eventType: string, target: any): void;
-    readonly message: Message;
+    send(eventType: string, target?: any): void;
+    subscribe(eventType: string): void;
+    unsubscribe(eventType: string): void;
 }
