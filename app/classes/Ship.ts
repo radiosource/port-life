@@ -1,6 +1,6 @@
 import {Harbor} from './Harbor';
 import {Dock} from './Dock';
-import {withMessages} from '../mixins/withMessages';
+import {Message} from "./Message";
 import {IShip} from '../interfaces/IShip';
 import {IWithMessages} from '../interfaces/IWithMessages';
 import {shipTypes, config} from '../config/default';
@@ -11,7 +11,7 @@ import * as PIXI from 'pixi.js'
 const TWEEN = require('@tweenjs/tween.js').default;
 
 
-export class Ship implements withMessages, IShip, IWithMessages {
+export class Ship implements IShip, IWithMessages {
 
     static quantity = 0;
 
@@ -38,16 +38,7 @@ export class Ship implements withMessages, IShip, IWithMessages {
     static readonly QUEUE_HAS_MOVED_MSG: string = "queueHasMoved";
     static readonly ARRIVED_AT_THE_GATE_MSG: string = "arrivedAtTheGate";
     static readonly MOVE_TO_DOCK_ACCEPTED_MSG: string = "moveToDockAccepted";
-
-
-    subscribe(event: string): void {
-    }
-
-    unsubscribe(event: string): void {
-    }
-
-    message(event: string, target?: any): void {
-    }
+    readonly message: Message = new Message(this);
 
     constructor(type) {
         if (!shipTypes[type]) {
@@ -82,15 +73,15 @@ export class Ship implements withMessages, IShip, IWithMessages {
             (object) => {
                 this.onAnimationUpdate(object);
                 if (shipsTooClose(this)) {
-                    this.message(Ship.QUEUE_HAS_MOVED_MSG);
-                    this.subscribe(Ship.QUEUE_HAS_MOVED_MSG);
+                    this.message.send(Ship.QUEUE_HAS_MOVED_MSG);
+                    this.message.subscribe(Ship.QUEUE_HAS_MOVED_MSG);
                     this.animation.pause();
                 }
             })
             .onComplete(() => {
-                this.subscribe(Dock.MOVE_TO_DOCK_MSG);
-                this.message(Ship.ARRIVED_AT_THE_GATE_MSG);
-                this.message(Ship.QUEUE_HAS_MOVED_MSG);
+                this.message.subscribe(Dock.MOVE_TO_DOCK_MSG);
+                this.message.send(Ship.ARRIVED_AT_THE_GATE_MSG);
+                this.message.send(Ship.QUEUE_HAS_MOVED_MSG);
             })
             .start()
 
@@ -101,15 +92,15 @@ export class Ship implements withMessages, IShip, IWithMessages {
             case Ship.QUEUE_HAS_MOVED_MSG:
                 if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
-                    this.unsubscribe(Ship.QUEUE_HAS_MOVED_MSG);
-                    this.message(Ship.QUEUE_HAS_MOVED_MSG);
+                    this.message.unsubscribe(Ship.QUEUE_HAS_MOVED_MSG);
+                    this.message.send(Ship.QUEUE_HAS_MOVED_MSG);
                 }
                 break;
             case Dock.MOVE_TO_DOCK_MSG:
                 if (target.loaded !== this.loaded && Harbor.gateIsOpen) {
-                    this.unsubscribe(Dock.MOVE_TO_DOCK_MSG);
-                    this.message(Ship.ENTER_MSG);
-                    this.message(Ship.MOVE_TO_DOCK_ACCEPTED_MSG, target);
+                    this.message.unsubscribe(Dock.MOVE_TO_DOCK_MSG);
+                    this.message.send(Ship.ENTER_MSG);
+                    this.message.send(Ship.MOVE_TO_DOCK_ACCEPTED_MSG, target);
                     this.moveToDock(target);
                 }
                 break;
@@ -120,15 +111,15 @@ export class Ship implements withMessages, IShip, IWithMessages {
         this.animation = this
             .makeAnimation({y: Harbor.gateY - this.GATE_Y_CORRECTION, x: this.x})
             .onComplete(() => {
-                this.message(Ship.QUEUE_HAS_MOVED_MSG);
-                this.message(Ship.EXIT_MSG);
+                this.message.send(Ship.QUEUE_HAS_MOVED_MSG);
+                this.message.send(Ship.EXIT_MSG);
             });
         this.animation.chain(
             this.makeAnimation({x: Harbor.gateX - Harbor.gateWidth * 2, y: Harbor.gateY - this.GATE_Y_CORRECTION})
                 .chain(this
                     .makeAnimation(target.receivingPoints)
                     .onComplete(() => {
-                        this.message(Ship.HANDLE_CARGO_MSG, target);
+                        this.message.send(Ship.HANDLE_CARGO_MSG, target);
                         this.animation = new TWEEN.Tween({})
                             .to({}, config.CARGO_HANDLING_TIME)
                             .onComplete((object) => {
@@ -156,7 +147,7 @@ export class Ship implements withMessages, IShip, IWithMessages {
             })
             .onComplete(() => {
                 this.graphics.destroy();
-                this.message(Ship.DESTROYED_MSG)
+                this.message.send(Ship.DESTROYED_MSG)
             })
         )
         ;

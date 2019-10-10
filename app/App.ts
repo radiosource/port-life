@@ -1,21 +1,16 @@
 import {config} from "./config/default";
 import {Ship} from "./classes/Ship";
 import {Harbor} from "./classes/Harbor";
-import {Dock} from "./classes/Dock";
 import {shipTypes} from './config/default';
-import {withMessages} from './mixins/withMessages';
+import {Message} from './classes/Message';
 import {IWithMessages} from './interfaces/IWithMessages';
-import {applyMixins} from './helper';
-import * as PIXI from 'pixi.js'
 
-applyMixins(Ship, [withMessages]);
-applyMixins(Dock, [withMessages]);
-applyMixins(Harbor, [withMessages]);
+import * as PIXI from 'pixi.js'
 
 const TWEEN = require('@tweenjs/tween.js').default;
 
 
-export class App implements withMessages, IWithMessages {
+export class App implements IWithMessages {
     readonly harbor: Harbor;
 
     //Неуверен что сделал правильно, когда обьявил корабли и приложение статическими свойствами,
@@ -30,15 +25,7 @@ export class App implements withMessages, IWithMessages {
         backgroundColor: config.WATER_COLOR
     });
     static stage = App.app.stage;
-
-    subscribe(event: string): void {
-    }
-
-    unsubscribe(event: string): void {
-    }
-
-    message(event: string, target?: any): void {
-    }
+    readonly message: Message = new Message(this);
 
     public handleMessage(eventType: string, target: any): void {
         switch (eventType) {
@@ -53,16 +40,16 @@ export class App implements withMessages, IWithMessages {
         this.animate();
 
         this.harbor = new Harbor();
-        this.subscribe("ship:destroyed");
+        this.message.subscribe(Ship.DESTROYED_MSG);
         this.createShip();
         setInterval(this.createShip, config.SHIP_CREATION_INTERVAL);
 
-        //Только для воспроизвидений разных ситуаций в процесе разработки
-        // Object.assign(window, {
-        //     createShip: this.createShip,
-        //     ships: App.ships,
-        //     start: () => setInterval(this.createShip, config.SHIP_CREATION_INTERVAL)
-        // });
+        //Только для воспроизведений разных ситуаций в процесе разработки
+        Object.assign(window, {
+            createShip: this.createShip,
+            ships: App.ships,
+            start: () => setInterval(this.createShip, config.SHIP_CREATION_INTERVAL)
+        });
     }
 
     protected createShip(type?: string): void {

@@ -1,10 +1,10 @@
 /// <reference types="tween.js" />
 import { Dock } from './Dock';
-import { withMessages } from '../mixins/withMessages';
+import { Message } from "./Message";
 import { IShip } from '../interfaces/IShip';
 import { IWithMessages } from '../interfaces/IWithMessages';
 import * as PIXI from 'pixi.js';
-export declare class Ship implements withMessages, IShip, IWithMessages {
+export declare class Ship implements IShip, IWithMessages {
     static quantity: number;
     readonly id: number;
     readonly width: number;
@@ -26,9 +26,7 @@ export declare class Ship implements withMessages, IShip, IWithMessages {
     static readonly QUEUE_HAS_MOVED_MSG: string;
     static readonly ARRIVED_AT_THE_GATE_MSG: string;
     static readonly MOVE_TO_DOCK_ACCEPTED_MSG: string;
-    subscribe(event: string): void;
-    unsubscribe(event: string): void;
-    message(event: string, target?: any): void;
+    readonly message: Message;
     constructor(type: any);
     protected makeGraphics(): void;
     protected moveToGate(): void;

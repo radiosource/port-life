@@ -2,11 +2,11 @@ import {config} from '../config/default';
 import {App} from "../App";
 import {Dock} from "./Dock";
 import {Ship} from "./Ship";
-import {withMessages} from '../mixins/withMessages';
+import {Message} from "./Message";
 import {IWithMessages} from '../interfaces/IWithMessages';
 import * as PIXI from 'pixi.js'
 
-export class Harbor implements withMessages, IWithMessages {
+export class Harbor implements IWithMessages {
     static quantity: number = 0;
     static gateIsOpen: boolean = true;
     static readonly gateX: number = config.WINDOW_WIDTH / 3;
@@ -19,16 +19,7 @@ export class Harbor implements withMessages, IWithMessages {
 
     static readonly GATE_OPEN_MSG: string = "gateOpen";
     static readonly GATE_CLOSED_MSG: string = "gateClosed";
-
-
-    subscribe(event: string): void {
-    }
-
-    unsubscribe(event: string): void {
-    }
-
-    message(event: string, target?: any): void {
-    }
+    readonly message: Message = new Message(this);
 
     constructor() {
         if (Harbor.quantity) throw Error("Only one harbor!");
@@ -44,19 +35,19 @@ export class Harbor implements withMessages, IWithMessages {
             this.docs.push(new Dock(config.WINDOW_HEIGHT / 4 * x))
         }
 
-        this.subscribe(Ship.EXIT_MSG);
-        this.subscribe(Ship.ENTER_MSG);
+        this.message.subscribe(Ship.EXIT_MSG);
+        this.message.subscribe(Ship.ENTER_MSG);
     }
 
     public handleMessage(eventType: string, target: Ship) {
         switch (eventType) {
             case Ship.ENTER_MSG:
                 Harbor.gateIsOpen = false;
-                this.message(Harbor.GATE_CLOSED_MSG);
+                this.message.send(Harbor.GATE_CLOSED_MSG);
                 break;
             case Ship.EXIT_MSG:
                 Harbor.gateIsOpen = true;
-                this.message(Harbor.GATE_OPEN_MSG);
+                this.message.send(Harbor.GATE_OPEN_MSG);
                 break;
         }
     }

@@ -4951,6 +4951,76 @@ const config = {
     SHIP_CREATION_INTERVAL: SECOND * 3,
 };
 
+// CONCATENATED MODULE: ./app/classes/abstracts/Messenger.ts
+//Наверно лучше подписоватся на события, указывая колбек,
+// а не все обрабатывать в одной функции-обработчике с свич кейсом.
+class Messenger {
+    /**
+     * Подписывает обьект на событие
+     * @param {string} eventName - название события
+     * @param subscriber - инстанс подписчика
+     */
+    static subscribe(eventName, subscriber) {
+        if (!(subscriber.handleMessage instanceof Function))
+            throw Error("subscribe::Invalid subscriber");
+        if (!Messenger.eventsListeners[eventName])
+            Messenger.eventsListeners[eventName] = new Set();
+        Messenger.eventsListeners[eventName].add(subscriber);
+    }
+    /**
+     * Отписывает обьект
+     * @param {string} eventName - название события
+     * @param subscriber - инстанс подписчика
+     */
+    static unsubscribe(eventName, subscriber) {
+        if (!Messenger.eventsListeners[eventName])
+            return;
+        Messenger.eventsListeners[eventName].delete(subscriber);
+    }
+    /**
+     * Отправляет сообщение всем подписаным обьектам, или конкретному инстансу
+     * @param {string} eventName
+     * @param initiator
+     * @param target - конкретный получатель
+     */
+    static message(eventName, initiator, target) {
+        if (!(Messenger.eventsListeners[eventName] instanceof Set))
+            return;
+        if (target) {
+            if (!(target.handleMessage instanceof Function))
+                throw Error("message::Invalid target!");
+            if (Messenger.eventsListeners[eventName].has(target)) {
+                target.handleMessage(eventName, initiator);
+            }
+        }
+        else {
+            for (let listener of Messenger.eventsListeners[eventName].values()) {
+                listener.handleMessage(eventName, initiator);
+            }
+        }
+    }
+}
+Messenger.eventsListeners = {};
+
+// CONCATENATED MODULE: ./app/classes/Message.ts
+
+//Этот класс собственно воззник, потому что  в кораблях, доках и гавани,
+// мне не нравилось каждый раз передавать контекст при вызове subscribe,unsubscribe,message
+class Message_Message {
+    constructor(owner) {
+        this.owner = owner;
+    }
+    subscribe(event) {
+        Messenger.subscribe(event, this.owner);
+    }
+    unsubscribe(event) {
+        Messenger.unsubscribe(event, this.owner);
+    }
+    send(event, target) {
+        Messenger.message(event, this.owner, target);
+    }
+}
+
 // EXTERNAL MODULE: ./node_modules/@pixi/polyfill/lib/polyfill.es.js
 var polyfill_es = __webpack_require__(11);
 
@@ -45530,6 +45600,7 @@ var filters = {
 
 
 
+
 const TWEEN = __webpack_require__(4).default;
 class Dock_Dock {
     constructor(yStart) {
@@ -45537,19 +45608,14 @@ class Dock_Dock {
         this.width = config.SHIP_HEIGHT;
         this.color = 0xd4af37;
         this._loaded = false;
+        this.message = new Message_Message(this);
         Dock_Dock.quantity++;
         this.id = Dock_Dock.quantity;
         this.yStart = yStart;
         this.receivingPoints = { y: yStart + this.width / 2, x: this.width + 10 };
         this.makeGraphics();
         this.animation = new TWEEN.Tween(this);
-        this.subscribe(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
-    }
-    subscribe(event) {
-    }
-    unsubscribe(event) {
-    }
-    message(event, target) {
+        this.message.subscribe(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
     }
     get loaded() {
         return this._loaded;
@@ -45570,25 +45636,25 @@ class Dock_Dock {
         switch (eventType) {
             case Ship_Ship.ARRIVED_AT_THE_GATE_MSG:
                 if (this.loaded !== target.loaded) {
-                    this.subscribe(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
-                    this.message(Dock_Dock.MOVE_TO_DOCK_MSG, target);
+                    this.message.subscribe(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
+                    this.message.send(Dock_Dock.MOVE_TO_DOCK_MSG, target);
                 }
                 break;
             case Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG:
-                this.unsubscribe(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
-                this.unsubscribe(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
-                this.subscribe(Ship_Ship.HANDLE_CARGO_MSG);
+                this.message.unsubscribe(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
+                this.message.unsubscribe(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
+                this.message.subscribe(Ship_Ship.HANDLE_CARGO_MSG);
                 break;
             case Ship_Ship.HANDLE_CARGO_MSG:
-                this.unsubscribe(Ship_Ship.HANDLE_CARGO_MSG);
+                this.message.unsubscribe(Ship_Ship.HANDLE_CARGO_MSG);
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
                     .onComplete((object) => {
                     this.loaded = !this.loaded;
                     this.makeGraphics();
-                    this.subscribe(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
-                    this.subscribe(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
-                    this.message(Dock_Dock.MOVE_TO_DOCK_MSG);
+                    this.message.subscribe(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
+                    this.message.subscribe(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
+                    this.message.send(Dock_Dock.MOVE_TO_DOCK_MSG);
                 })
                     .start();
                 break;
@@ -45604,10 +45670,12 @@ Dock_Dock.MOVE_TO_DOCK_MSG = "moveToDock";
 
 
 
+
 class Harbor_Harbor {
     constructor() {
         this.docs = [];
         this.color = 0xd4af37;
+        this.message = new Message_Message(this);
         if (Harbor_Harbor.quantity)
             throw Error("Only one harbor!");
         Harbor_Harbor.quantity++;
@@ -45620,24 +45688,18 @@ class Harbor_Harbor {
         for (let x = 0; x < config.DOCKS_COUNT; x++) {
             this.docs.push(new Dock_Dock(config.WINDOW_HEIGHT / 4 * x));
         }
-        this.subscribe(Ship_Ship.EXIT_MSG);
-        this.subscribe(Ship_Ship.ENTER_MSG);
-    }
-    subscribe(event) {
-    }
-    unsubscribe(event) {
-    }
-    message(event, target) {
+        this.message.subscribe(Ship_Ship.EXIT_MSG);
+        this.message.subscribe(Ship_Ship.ENTER_MSG);
     }
     handleMessage(eventType, target) {
         switch (eventType) {
             case Ship_Ship.ENTER_MSG:
                 Harbor_Harbor.gateIsOpen = false;
-                this.message(Harbor_Harbor.GATE_CLOSED_MSG);
+                this.message.send(Harbor_Harbor.GATE_CLOSED_MSG);
                 break;
             case Ship_Ship.EXIT_MSG:
                 Harbor_Harbor.gateIsOpen = true;
-                this.message(Harbor_Harbor.GATE_OPEN_MSG);
+                this.message.send(Harbor_Harbor.GATE_OPEN_MSG);
                 break;
         }
     }
@@ -45709,11 +45771,13 @@ function applyMixins(derivedCtor, baseCtors) {
 
 
 
+
 const Ship_TWEEN = __webpack_require__(4).default;
 class Ship_Ship {
     constructor(type) {
         this.width = config.SHIP_WIDTH;
         this.height = config.SHIP_HEIGHT;
+        this.message = new Message_Message(this);
         if (!shipTypes[type]) {
             throw Error(`Invalid ship type - '${type}'`);
         }
@@ -45728,12 +45792,6 @@ class Ship_Ship {
         this.makeGraphics();
         this.moveToGate();
     }
-    subscribe(event) {
-    }
-    unsubscribe(event) {
-    }
-    message(event, target) {
-    }
     makeGraphics() {
         let graphics = new graphics_es_Graphics();
         graphics.beginFill(this.loaded ? this.color : config.WATER_COLOR, 1);
@@ -45747,15 +45805,15 @@ class Ship_Ship {
         this.animation = this.makeAnimation({ x: Harbor_Harbor.gateX + config.SAFE_DISTANCE, y: this.y }, (object) => {
             this.onAnimationUpdate(object);
             if (shipsTooClose(this)) {
-                this.message(Ship_Ship.QUEUE_HAS_MOVED_MSG);
-                this.subscribe(Ship_Ship.QUEUE_HAS_MOVED_MSG);
+                this.message.send(Ship_Ship.QUEUE_HAS_MOVED_MSG);
+                this.message.subscribe(Ship_Ship.QUEUE_HAS_MOVED_MSG);
                 this.animation.pause();
             }
         })
             .onComplete(() => {
-            this.subscribe(Dock_Dock.MOVE_TO_DOCK_MSG);
-            this.message(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
-            this.message(Ship_Ship.QUEUE_HAS_MOVED_MSG);
+            this.message.subscribe(Dock_Dock.MOVE_TO_DOCK_MSG);
+            this.message.send(Ship_Ship.ARRIVED_AT_THE_GATE_MSG);
+            this.message.send(Ship_Ship.QUEUE_HAS_MOVED_MSG);
         })
             .start();
     }
@@ -45764,15 +45822,15 @@ class Ship_Ship {
             case Ship_Ship.QUEUE_HAS_MOVED_MSG:
                 if (this.animation.isPaused() && !shipsTooClose(this)) {
                     this.animation.isPaused() && this.animation.resume();
-                    this.unsubscribe(Ship_Ship.QUEUE_HAS_MOVED_MSG);
-                    this.message(Ship_Ship.QUEUE_HAS_MOVED_MSG);
+                    this.message.unsubscribe(Ship_Ship.QUEUE_HAS_MOVED_MSG);
+                    this.message.send(Ship_Ship.QUEUE_HAS_MOVED_MSG);
                 }
                 break;
             case Dock_Dock.MOVE_TO_DOCK_MSG:
                 if (target.loaded !== this.loaded && Harbor_Harbor.gateIsOpen) {
-                    this.unsubscribe(Dock_Dock.MOVE_TO_DOCK_MSG);
-                    this.message(Ship_Ship.ENTER_MSG);
-                    this.message(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG, target);
+                    this.message.unsubscribe(Dock_Dock.MOVE_TO_DOCK_MSG);
+                    this.message.send(Ship_Ship.ENTER_MSG);
+                    this.message.send(Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG, target);
                     this.moveToDock(target);
                 }
                 break;
@@ -45782,14 +45840,14 @@ class Ship_Ship {
         this.animation = this
             .makeAnimation({ y: Harbor_Harbor.gateY - this.GATE_Y_CORRECTION, x: this.x })
             .onComplete(() => {
-            this.message(Ship_Ship.QUEUE_HAS_MOVED_MSG);
-            this.message(Ship_Ship.EXIT_MSG);
+            this.message.send(Ship_Ship.QUEUE_HAS_MOVED_MSG);
+            this.message.send(Ship_Ship.EXIT_MSG);
         });
         this.animation.chain(this.makeAnimation({ x: Harbor_Harbor.gateX - Harbor_Harbor.gateWidth * 2, y: Harbor_Harbor.gateY - this.GATE_Y_CORRECTION })
             .chain(this
             .makeAnimation(target.receivingPoints)
             .onComplete(() => {
-            this.message(Ship_Ship.HANDLE_CARGO_MSG, target);
+            this.message.send(Ship_Ship.HANDLE_CARGO_MSG, target);
             this.animation = new Ship_TWEEN.Tween({})
                 .to({}, config.CARGO_HANDLING_TIME)
                 .onComplete((object) => {
@@ -45814,7 +45872,7 @@ class Ship_Ship {
         })
             .onComplete(() => {
             this.graphics.destroy();
-            this.message(Ship_Ship.DESTROYED_MSG);
+            this.message.send(Ship_Ship.DESTROYED_MSG);
         }));
         this.animation.start();
     }
@@ -45865,71 +45923,6 @@ Ship_Ship.QUEUE_HAS_MOVED_MSG = "queueHasMoved";
 Ship_Ship.ARRIVED_AT_THE_GATE_MSG = "arrivedAtTheGate";
 Ship_Ship.MOVE_TO_DOCK_ACCEPTED_MSG = "moveToDockAccepted";
 
-// CONCATENATED MODULE: ./app/classes/Messenger.ts
-//Наверно лучше подписоватся на события, указывая колбек,
-// а не все обрабатывать в одной функции-обработчике с свич кейсом.
-class Messenger {
-    /**
-     * Подписывает обьект на событие
-     * @param {string} eventName - название события
-     * @param subscriber - инстанс подписчика
-     */
-    static subscribe(eventName, subscriber) {
-        if (!(subscriber.handleMessage instanceof Function))
-            throw Error("subscribe::Invalid subscriber");
-        if (!Messenger.eventsListeners[eventName])
-            Messenger.eventsListeners[eventName] = new Set();
-        Messenger.eventsListeners[eventName].add(subscriber);
-    }
-    /**
-     * Отписывает обьект
-     * @param {string} eventName - название события
-     * @param subscriber - инстанс подписчика
-     */
-    static unsubscribe(eventName, subscriber) {
-        if (!Messenger.eventsListeners[eventName])
-            return;
-        Messenger.eventsListeners[eventName].delete(subscriber);
-    }
-    /**
-     * Отправляет сообщение всем подписаным обьектам, или конкретному инстансу
-     * @param {string} eventName
-     * @param initiator
-     * @param target - конкретный получатель
-     */
-    static message(eventName, initiator, target) {
-        if (!(Messenger.eventsListeners[eventName] instanceof Set))
-            return;
-        if (target) {
-            if (!(target.handleMessage instanceof Function))
-                throw Error("message::Invalid target!");
-            if (Messenger.eventsListeners[eventName].has(target)) {
-                target.handleMessage(eventName, initiator);
-            }
-        }
-        else {
-            for (let listener of Messenger.eventsListeners[eventName].values()) {
-                listener.handleMessage(eventName, initiator);
-            }
-        }
-    }
-}
-Messenger.eventsListeners = {};
-
-// CONCATENATED MODULE: ./app/mixins/withMessages.ts
-
-class withMessages_withMessages {
-    subscribe(event) {
-        Messenger.subscribe(event, this);
-    }
-    unsubscribe(event) {
-        Messenger.unsubscribe(event, this);
-    }
-    message(event, target) {
-        Messenger.message(event, this, target);
-    }
-}
-
 // CONCATENATED MODULE: ./app/App.ts
 
 
@@ -45937,18 +45930,14 @@ class withMessages_withMessages {
 
 
 
-
-
-applyMixins(Ship_Ship, [withMessages_withMessages]);
-applyMixins(Dock_Dock, [withMessages_withMessages]);
-applyMixins(Harbor_Harbor, [withMessages_withMessages]);
 const App_TWEEN = __webpack_require__(4).default;
 class App_App {
     constructor() {
+        this.message = new Message_Message(this);
         document.body.appendChild(App_App.app.view);
         this.animate();
         this.harbor = new Harbor_Harbor();
-        this.subscribe("ship:destroyed");
+        this.message.subscribe(Ship_Ship.DESTROYED_MSG);
         this.createShip();
         setInterval(this.createShip, config.SHIP_CREATION_INTERVAL);
         //Только для воспроизведений разных ситуаций в процесе разработки
@@ -45957,12 +45946,6 @@ class App_App {
             ships: App_App.ships,
             start: () => setInterval(this.createShip, config.SHIP_CREATION_INTERVAL)
         });
-    }
-    subscribe(event) {
-    }
-    unsubscribe(event) {
-    }
-    message(event, target) {
     }
     handleMessage(eventType, target) {
         switch (eventType) {

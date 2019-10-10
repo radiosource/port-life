@@ -1,7 +1,7 @@
 import {config} from '../config/default';
 import {App} from "../App";
 import {Ship} from "./Ship";
-import {withMessages} from "../mixins/withMessages";
+import {Message} from "./Message";
 import {IDock} from '../interfaces/IDock';
 import {IWithMessages} from '../interfaces/IWithMessages';
 import * as PIXI from 'pixi.js'
@@ -9,7 +9,7 @@ import * as PIXI from 'pixi.js'
 const TWEEN = require('@tweenjs/tween.js').default;
 
 
-export class Dock implements IDock, withMessages, IWithMessages {
+export class Dock implements IDock, IWithMessages {
     static quantity = 0;
     readonly id: number;
 
@@ -24,15 +24,7 @@ export class Dock implements IDock, withMessages, IWithMessages {
     readonly yStart: number;
 
     static readonly MOVE_TO_DOCK_MSG: string = "moveToDock";
-
-    subscribe(event: string): void {
-    }
-
-    unsubscribe(event: string): void {
-    }
-
-    message(event: string, target?: any): void {
-    }
+    readonly message: Message = new Message(this);
 
     constructor(yStart: number) {
         Dock.quantity++;
@@ -42,7 +34,7 @@ export class Dock implements IDock, withMessages, IWithMessages {
         this.makeGraphics();
 
         this.animation = new TWEEN.Tween(this);
-        this.subscribe(Ship.ARRIVED_AT_THE_GATE_MSG);
+        this.message.subscribe(Ship.ARRIVED_AT_THE_GATE_MSG);
     }
 
     get loaded() {
@@ -69,27 +61,27 @@ export class Dock implements IDock, withMessages, IWithMessages {
 
             case Ship.ARRIVED_AT_THE_GATE_MSG :
                 if (this.loaded !== target.loaded) {
-                    this.subscribe(Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
-                    this.message(Dock.MOVE_TO_DOCK_MSG, target);
+                    this.message.subscribe(Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
+                    this.message.send(Dock.MOVE_TO_DOCK_MSG, target);
                 }
                 break;
 
             case Ship.MOVE_TO_DOCK_ACCEPTED_MSG:
-                this.unsubscribe(Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
-                this.unsubscribe(Ship.ARRIVED_AT_THE_GATE_MSG);
-                this.subscribe(Ship.HANDLE_CARGO_MSG);
+                this.message.unsubscribe(Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
+                this.message.unsubscribe(Ship.ARRIVED_AT_THE_GATE_MSG);
+                this.message.subscribe(Ship.HANDLE_CARGO_MSG);
                 break;
 
             case Ship.HANDLE_CARGO_MSG :
-                this.unsubscribe(Ship.HANDLE_CARGO_MSG);
+                this.message.unsubscribe(Ship.HANDLE_CARGO_MSG);
                 this.animation = new TWEEN.Tween({})
                     .to({}, config.CARGO_HANDLING_TIME)
                     .onComplete((object) => {
                         this.loaded = !this.loaded;
                         this.makeGraphics();
-                        this.subscribe(Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
-                        this.subscribe(Ship.ARRIVED_AT_THE_GATE_MSG);
-                        this.message(Dock.MOVE_TO_DOCK_MSG);
+                        this.message.subscribe(Ship.MOVE_TO_DOCK_ACCEPTED_MSG);
+                        this.message.subscribe(Ship.ARRIVED_AT_THE_GATE_MSG);
+                        this.message.send(Dock.MOVE_TO_DOCK_MSG);
                     })
                     .start()
                 ;
